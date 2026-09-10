@@ -22,7 +22,7 @@ interface ProductInfoProps {
             id: string;
             name: string;
             sku: string;
-            priceWithTax: number;
+            price: number;
             stockLevel: string;
             options: Array<{
                 id: string;
@@ -147,7 +147,7 @@ export function ProductInfo({product, searchParams, currencyCode}: ProductInfoPr
                 <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{product.name}</h1>
                 {selectedVariant && (
                     <p className="text-2xl md:text-3xl text-muted-foreground font-semibold mt-3">
-                        <Price value={selectedVariant.priceWithTax} currencyCode={currencyCode}/>
+                        <Price value={selectedVariant.price} currencyCode={currencyCode}/>
                     </p>
                 )}
             </div>

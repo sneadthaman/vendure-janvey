@@ -119,6 +119,7 @@ export default async function CollectionPage({params, searchParams}: PageProps<'
     const productDataPromise = getCollectionProducts(slug, searchParamsResolved, currencyCode);
     const collectionResult = await getCollectionMetadata(slug);
     const collectionName = collectionResult.data.collection?.name ?? slug;
+    const children=(collectionResult.data.collection?.children||[]).filter(child=>child.customFields?.showInNavigation!==false);
 
     return (
         <div className="container mx-auto px-4 py-8 mt-16">
@@ -139,6 +140,10 @@ export default async function CollectionPage({params, searchParams}: PageProps<'
             <div className="mb-8">
                 <h1 className="text-3xl font-bold tracking-tight">{collectionName}</h1>
             </div>
+
+            {children.length>0&&<div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {children.map(child=><Link key={child.slug} href={`/collection/${child.slug}`} className="rounded-lg border bg-card p-4 font-medium transition-colors hover:bg-accent">{child.name}</Link>)}
+            </div>}
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 {/* Filters Sidebar */}

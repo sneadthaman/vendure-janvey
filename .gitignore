@@ -10,3 +10,4 @@ apps/server/.env
 *.tsbuildinfo
 *.key
 *.pem
+.local/

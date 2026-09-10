@@ -9,7 +9,7 @@ export const ProductCardFragment = graphql(`
             id
             preview
         }
-        priceWithTax {
+        price {
             __typename
             ... on PriceRange {
                 min
@@ -39,7 +39,7 @@ export const GetProductDetailQuery = graphql(`
                 id
                 name
                 sku
-                priceWithTax
+                price
                 stockLevel
                 options {
                     id

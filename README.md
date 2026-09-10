@@ -18,6 +18,16 @@ janvey-shop/
 
 ### Development
 
+Start Docker Desktop and wait for its engine to be running. The dev startup check
+verifies the configured PostgreSQL login before launching the apps. If the local
+database on port 6543 is stopped, it starts only the `postgres_db` Compose service
+and waits for its health check. Existing database volumes are preserved.
+
+Run one instance of each app. If the storefront is already running on port 3001,
+use `npm run dev:server` to start only the backend. Occupied app ports produce a
+clear error before any additional processes are launched. When a child process
+exits during the combined dev command, its sibling is stopped as well.
+
 Start both the server and storefront in development mode:
 
 ```bash

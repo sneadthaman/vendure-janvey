@@ -9,6 +9,7 @@
     "subtotal": "Zwischensumme",
     "shipping": "Versand",
     "calculatedAtCheckout": "Wird an der Kasse berechnet",
+    "taxCalculatedAtCheckout": "Die Steuer wird an der Kasse anhand des geltenden Kundensatzes berechnet.",
     "total": "Gesamt",
     "proceedToCheckout": "Zur Kasse",
     "secureCheckout": "Sicherer Checkout",

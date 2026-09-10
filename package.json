@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently -n server,storefront -c blue,magenta \"npm run dev -w server\" \"npm run dev -w storefront\"",
+    "predev": "node scripts/prepare-dev.mjs all",
+    "dev": "concurrently --kill-others -n server,storefront -c blue,magenta \"npm run dev -w server\" \"npm run dev -w storefront\"",
     "dev:server": "npm run dev -w server",
     "dev:storefront": "npm run dev -w storefront",
     "build": "npm run build -w server && npm run build -w storefront",

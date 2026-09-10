@@ -8,6 +8,17 @@ export const GetTopCollectionsQuery = graphql(`
                 id
                 name
                 slug
+                customFields {
+                    showInNavigation
+                }
+                children {
+                    id
+                    name
+                    slug
+                    customFields {
+                        showInNavigation
+                    }
+                }
             }
         }
     }
@@ -20,6 +31,14 @@ export const GetCollectionProductsQuery = graphql(`
             name
             slug
             description
+            children {
+                id
+                name
+                slug
+                customFields {
+                    showInNavigation
+                }
+            }
             featuredAsset {
                 id
                 preview

@@ -1,4 +1,5 @@
 import {
+    AddressBasedTaxZoneStrategy,
     dummyPaymentHandler,
     DefaultJobQueuePlugin,
     DefaultSchedulerPlugin,
@@ -10,13 +11,20 @@ import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import { DashboardPlugin } from '@vendure/dashboard/plugin';
 import { GraphiqlPlugin } from '@vendure/graphiql-plugin';
 import 'dotenv/config';
+import { existsSync } from 'node:fs';
 import path from 'path';
 import { NetsuiteSyncPlugin } from './plugins/netsuite-sync/netsuite-sync.plugin';
+import { customFields } from './custom-fields';
 
 const IS_DEV = process.env.APP_ENV === 'dev';
 // PORT wins because hosting platforms inject it into the environment at runtime, and that
 // must take precedence over any value baked into the .env file at scaffold time.
 const serverPort = +process.env.PORT || +process.env.VENDURE_SERVER_PORT || 3000;
+const repositoryRoot = path.resolve(__dirname, '../../..');
+const configuredLocalImages = process.env.NETSUITE_IMAGE_DIRECTORY;
+const localImagesPath = configuredLocalImages
+    ? path.resolve(repositoryRoot, configuredLocalImages)
+    : path.join(repositoryRoot, '.local/netsuite-images/extracted');
 
 export const config: VendureConfig = {
     apiOptions: {
@@ -68,9 +76,13 @@ export const config: VendureConfig = {
     paymentOptions: {
         paymentMethodHandlers: [dummyPaymentHandler],
     },
+    taxOptions: {
+        // Recalculate checkout tax from the order's shipping-address zone.
+        taxZoneStrategy: new AddressBasedTaxZoneStrategy(),
+    },
     // When adding or altering custom field definitions, the database will
     // need to be updated. See the "Migrations" section in README.md.
-    customFields: {},
+    customFields: { ...customFields },
     plugins: [
         GraphiqlPlugin.init(),
         AssetServerPlugin.init({
@@ -105,6 +117,20 @@ export const config: VendureConfig = {
                 ? path.join(__dirname, '../dist/dashboard')
                 : path.join(__dirname, 'dashboard'),
         }),
-        NetsuiteSyncPlugin.init({}),
+        NetsuiteSyncPlugin.init({
+            accountId: process.env.NETSUITE_ACCOUNT_ID,
+            consumerKey: process.env.NETSUITE_CONSUMER_KEY,
+            consumerSecret: process.env.NETSUITE_CONSUMER_SECRET,
+            tokenId: process.env.NETSUITE_TOKEN_ID,
+            tokenSecret: process.env.NETSUITE_TOKEN_SECRET,
+            itemsUrl: process.env.NETSUITE_RESTLET_URL,
+            pricingUrl: process.env.NETSUITE_PRICING_RESTLET_URL ||
+                'https://5013697.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=2212&deploy=1',
+            imagesUrl: process.env.NETSUITE_IMAGES_RESTLET_URL ||
+                'https://5013697.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=2213&deploy=1',
+            // A local File Cabinet export is used only where it actually exists.
+            // Production deployments continue to use the read-only RESTlet.
+            localImagesPath: existsSync(localImagesPath) ? localImagesPath : undefined,
+        }),
     ],
 };

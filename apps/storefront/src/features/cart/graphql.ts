@@ -8,16 +8,13 @@ export const GetActiveOrderQuery = graphql(`
             state
             totalQuantity
             subTotal
-            subTotalWithTax
             shipping
-            shippingWithTax
             total
-            totalWithTax
             currencyCode
             couponCodes
             discounts {
                 description
-                amountWithTax
+                amount
             }
             lines {
                 id
@@ -35,9 +32,9 @@ export const GetActiveOrderQuery = graphql(`
                         }
                     }
                 }
-                unitPriceWithTax
+                unitPrice
                 quantity
-                linePriceWithTax
+                linePrice
             }
         }
     }
@@ -109,11 +106,11 @@ export const ApplyPromotionCodeMutation = graphql(`
             ... on Order {
                 id
                 code
-                totalWithTax
+                total
                 couponCodes
                 discounts {
                     description
-                    amountWithTax
+                    amount
                 }
             }
             ... on ErrorResult {
@@ -129,11 +126,11 @@ export const RemovePromotionCodeMutation = graphql(`
         removeCouponCode(couponCode: $couponCode) {
             id
             code
-            totalWithTax
+            total
             couponCodes
             discounts {
                 description
-                amountWithTax
+                amount
             }
         }
     }

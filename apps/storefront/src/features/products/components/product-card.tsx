@@ -42,17 +42,17 @@ export function ProductCard({product: productProp, preload}: ProductCardProps) {
                 </h3>
                 <Suspense fallback={<div className="h-8 w-36 rounded bg-muted"></div>}>
                     <p className="text-lg font-bold tracking-tight">
-                        {product.priceWithTax.__typename === 'PriceRange' ? (
-                            product.priceWithTax.min !== product.priceWithTax.max ? (
+                        {product.price.__typename === 'PriceRange' ? (
+                            product.price.min !== product.price.max ? (
                                 <>
                                     <span className="text-xs font-normal text-muted-foreground mr-1">{t('from')}</span>
-                                    <Price value={product.priceWithTax.min} currencyCode={product.currencyCode}/>
+                                    <Price value={product.price.min} currencyCode={product.currencyCode}/>
                                 </>
                             ) : (
-                                <Price value={product.priceWithTax.min} currencyCode={product.currencyCode}/>
+                                <Price value={product.price.min} currencyCode={product.currencyCode}/>
                             )
-                        ) : product.priceWithTax.__typename === 'SinglePrice' ? (
-                            <Price value={product.priceWithTax.value} currencyCode={product.currencyCode}/>
+                        ) : product.price.__typename === 'SinglePrice' ? (
+                            <Price value={product.price.value} currencyCode={product.currencyCode}/>
                         ) : null}
                     </p>
                 </Suspense>

@@ -8,5 +8,10 @@ export async function getTopCollections(locale: string) {
     cacheTag(`collections-${locale}`);
 
     const result = await query(GetTopCollectionsQuery, undefined, {languageCode: locale});
-    return result.data.collections.items;
+    return result.data.collections.items
+        .filter(collection => collection.customFields?.showInNavigation !== false)
+        .map(collection => ({
+            ...collection,
+            children:(collection.children||[]).filter(child => child.customFields?.showInNavigation !== false),
+        }));
 }

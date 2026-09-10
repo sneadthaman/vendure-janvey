@@ -17,12 +17,13 @@
  */
 define(['N/search'], (search) => {
 
-    // Standard Item / Web Store tab fields only -- no custom fields.
+    // Standard Item / Web Store tab fields, plus the custom fields you use.
     // Note: not every field visible on the item record is available as a
     // search column via the generic search.Type.ITEM (which spans all
-    // item subtypes). pagetitle was rejected with SSS_INVALID_SRCH_COL --
-    // removed for now. Add fields back one at a time and re-test if you
-    // hit the same error on urlcomponent or others.
+    // item subtypes). pagetitle was rejected with SSS_INVALID_SRCH_COL and
+    // stays out. If any of these throw the same error, pull that one field
+    // out, redeploy, and test again -- SSS_INVALID_SRCH_COL always names
+    // the offending field, so you'll know exactly which one to remove.
     const COLUMNS = [
         'internalid',
         'itemid',                    // Item Name/Number -> maps to Axim SKU
@@ -30,8 +31,31 @@ define(['N/search'], (search) => {
         'salesdescription',
         'storedescription',
         'storedetaileddescription',
-        'urlcomponent'
+        'urlcomponent',
+        'featureddescription',
+        'weight',
+        'manufacturer',
+        'mpn',
+        'countryofmanufacture',
+        'upccode',
+        'class',                             // maps to your product categories
+        'custitem_janvey_jm_images',
+        'custitem_packship_itm_pack_height',
+        'custitem_packship_itm_pack_length',
+        'custitem_packship_itm_pack_width',
+        'custitem10',                        // video link
+        'custitem7',                         // attribute pack size
+        'custitem9',                         // literature link
+        'custitem8',                         // SDS link
+        'custitem_pallet_qqty'
     ];
+
+    // These are NetSuite list/record fields -- getValue() returns their
+    // internal ID, getText() returns the readable name. Since these are
+    // used for display (class -> product categories, etc.), we want text.
+    // manufacturer is stored as free text in this account (not a list
+    // field), so it's read with getValue() like everything else.
+    const TEXT_FIELDS = new Set(['class', 'countryofmanufacture']);
 
     const get = (requestParams) => {
         const limit = Math.min(parseInt(requestParams.limit, 10) || 100, 1000);
@@ -42,7 +66,8 @@ define(['N/search'], (search) => {
             filters: [
                 ['isonline', 'is', 'T'] // Display in Web Store checkbox
             ],
-            columns: COLUMNS
+            columns: COLUMNS.map(name => name === 'internalid'
+                ? search.createColumn({name, sort: search.Sort.ASC}) : name)
         });
 
         const results = [];
@@ -63,9 +88,11 @@ define(['N/search'], (search) => {
                 }
                 if (collected >= limit) break outer;
 
-                const row = {};
+                const row = { recordType: result.recordType };
                 itemSearch.columns.forEach((column) => {
-                    row[column.name] = result.getValue(column);
+                    row[column.name] = TEXT_FIELDS.has(column.name)
+                        ? result.getText(column)
+                        : result.getValue(column);
                 });
                 results.push(row);
                 collected++;
@@ -74,6 +101,7 @@ define(['N/search'], (search) => {
 
         return {
             count: results.length,
+            total: pagedData.count,
             offset,
             limit,
             items: results

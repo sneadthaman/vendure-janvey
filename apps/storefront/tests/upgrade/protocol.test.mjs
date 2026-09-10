@@ -28,6 +28,10 @@ async function write(root, relative, content) {
     await writeFile(file, content);
 }
 
+async function readPortableText(file) {
+    return (await readFile(file, 'utf8')).replaceAll('\r\n', '\n');
+}
+
 async function installSchemas(root) {
     for (const schema of ['storefront.schema.json', 'upgrade-manifest.schema.json']) {
         await write(root, `schemas/${schema}`, await readFile(path.join(repositoryRoot, 'schemas', schema), 'utf8'));
@@ -237,8 +241,8 @@ test('detached downstream repositories prepare, verify, and finalize an upgrade'
     assert.equal(git(downstream, 'for-each-ref', '--format=%(refname)', 'refs/storefront-upgrades'), '');
     assert.equal(await readFile(path.join(downstream, 'src/value.txt'), 'utf8'), 'downstream customization\n');
     assert.match(await readFile(path.join(prepared.contextDirectory, 'INTEGRATION.md'), 'utf8'), /Downstream intent wins/);
-    assert.equal(await readFile(path.join(prepared.contextDirectory, 'baseline/src/value.txt'), 'utf8'), 'upstream v1\n');
-    assert.equal(await readFile(path.join(prepared.contextDirectory, 'target/src/value.txt'), 'utf8'), 'upstream v1.1\n');
+    assert.equal(await readPortableText(path.join(prepared.contextDirectory, 'baseline/src/value.txt')), 'upstream v1\n');
+    assert.equal(await readPortableText(path.join(prepared.contextDirectory, 'target/src/value.txt')), 'upstream v1.1\n');
 
     const report = `# Upgrade report
 
@@ -293,7 +297,7 @@ test('an explicitly acknowledged moved tag uses the recorded commit as baseline'
 
     await assert.rejects(prepareUpgrade(downstream, '1.1.0'), /--allow-moved-baseline/);
     const prepared = await prepareUpgrade(downstream, '1.1.0', {allowMovedBaseline: initialized.commit});
-    assert.equal(await readFile(path.join(prepared.contextDirectory, 'baseline/src/value.txt'), 'utf8'), 'upstream v1\n');
+    assert.equal(await readPortableText(path.join(prepared.contextDirectory, 'baseline/src/value.txt')), 'upstream v1\n');
 });
 
 test('worktree fingerprints include ignored environment and survive a content-preserving commit', async t => {

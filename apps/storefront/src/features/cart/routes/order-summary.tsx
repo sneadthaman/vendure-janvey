@@ -7,12 +7,12 @@ import {getTranslations} from 'next-intl/server';
 type ActiveOrder = {
     id: string;
     currencyCode: string;
-    subTotalWithTax: number;
-    shippingWithTax: number;
-    totalWithTax: number;
+    subTotal: number;
+    shipping: number;
+    total: number;
     discounts?: Array<{
         description: string;
-        amountWithTax: number;
+        amount: number;
     }> | null;
 };
 
@@ -26,7 +26,7 @@ export async function OrderSummary({activeOrder}: { activeOrder: ActiveOrder }) 
                 <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">{t('subtotal')}</span>
                     <span>
-                        <Price value={activeOrder.subTotalWithTax} currencyCode={activeOrder.currencyCode}/>
+                        <Price value={activeOrder.subTotal} currencyCode={activeOrder.currencyCode}/>
                     </span>
                 </div>
                 {activeOrder.discounts && activeOrder.discounts.length > 0 && (
@@ -35,7 +35,7 @@ export async function OrderSummary({activeOrder}: { activeOrder: ActiveOrder }) 
                             <div key={index} className="flex justify-between text-sm text-green-600">
                                 <span>{discount.description}</span>
                                 <span>
-                                    <Price value={discount.amountWithTax} currencyCode={activeOrder.currencyCode}/>
+                                    <Price value={discount.amount} currencyCode={activeOrder.currencyCode}/>
                                 </span>
                             </div>
                         ))}
@@ -44,8 +44,8 @@ export async function OrderSummary({activeOrder}: { activeOrder: ActiveOrder }) 
                 <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">{t('shipping')}</span>
                     <span>
-                        {activeOrder.shippingWithTax > 0
-                            ? <Price value={activeOrder.shippingWithTax} currencyCode={activeOrder.currencyCode}/>
+                        {activeOrder.shipping > 0
+                            ? <Price value={activeOrder.shipping} currencyCode={activeOrder.currencyCode}/>
                             : t('calculatedAtCheckout')}
                     </span>
                 </div>
@@ -55,10 +55,12 @@ export async function OrderSummary({activeOrder}: { activeOrder: ActiveOrder }) 
                 <div className="flex justify-between items-baseline text-lg font-bold">
                     <span>{t('total')}</span>
                     <span className="text-2xl">
-                        <Price value={activeOrder.totalWithTax} currencyCode={activeOrder.currencyCode}/>
+                        <Price value={activeOrder.total} currencyCode={activeOrder.currencyCode}/>
                     </span>
                 </div>
             </div>
+
+            <p className="text-xs text-muted-foreground mb-4">{t('taxCalculatedAtCheckout')}</p>
 
             <Button render={<Link href="/checkout" />} nativeButton={false} className="w-full" size="lg">{t('proceedToCheckout')}</Button>
 

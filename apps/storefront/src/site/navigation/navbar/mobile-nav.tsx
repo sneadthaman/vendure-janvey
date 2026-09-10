@@ -14,11 +14,13 @@ import {
     SheetClose,
 } from '@/components/ui/sheet';
 import {useTranslations} from 'next-intl';
+import {Accordion,AccordionContent,AccordionItem,AccordionTrigger} from '@/components/ui/accordion';
 
 interface Collection {
     id: string;
     name: string;
     slug: string;
+    children?:Collection[]|null;
 }
 
 interface MobileNavProps {
@@ -89,23 +91,15 @@ export function MobileNav({collections}: MobileNavProps) {
                             <p className="px-3 mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                                 {t('collections')}
                             </p>
-                            <nav className="flex flex-col gap-0.5">
-                                {collections.map((collection) => (
-                                    <SheetClose
-                                        key={collection.slug}
-                                        render={
-                                            <Link
-                                                href={`/collection/${collection.slug}`}
-                                                className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-md hover:bg-accent transition-colors"
-                                            />
-                                        }
-                                        nativeButton={false}
-                                        onClick={handleLinkClick}
-                                    >
-                                        {collection.name}
-                                    </SheetClose>
-                                ))}
-                            </nav>
+                            <Accordion className="px-1">
+                                {collections.map(collection=><AccordionItem key={collection.slug} value={collection.slug}>
+                                    <AccordionTrigger className="px-2 py-3">{collection.name}</AccordionTrigger>
+                                    <AccordionContent className="flex flex-col gap-1 pl-3">
+                                        <SheetClose render={<Link href={`/collection/${collection.slug}`} className="rounded-md px-3 py-2 font-medium hover:bg-accent" />} nativeButton={false} onClick={handleLinkClick}>Shop all {collection.name}</SheetClose>
+                                        {collection.children?.map(child=><SheetClose key={child.slug} render={<Link href={`/collection/${child.slug}`} className="rounded-md px-3 py-2 hover:bg-accent" />} nativeButton={false} onClick={handleLinkClick}>{child.name}</SheetClose>)}
+                                    </AccordionContent>
+                                </AccordionItem>)}
+                            </Accordion>
                         </div>
                     )}
 

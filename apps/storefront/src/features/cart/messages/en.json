@@ -9,6 +9,7 @@
     "subtotal": "Subtotal",
     "shipping": "Shipping",
     "calculatedAtCheckout": "Calculated at checkout",
+    "taxCalculatedAtCheckout": "Tax is calculated at checkout using the customer's applicable rate.",
     "total": "Total",
     "proceedToCheckout": "Proceed to Checkout",
     "secureCheckout": "Secure Checkout",

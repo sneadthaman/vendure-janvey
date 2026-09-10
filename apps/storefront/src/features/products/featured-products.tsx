@@ -29,12 +29,10 @@ async function getFeaturedCollectionProducts(currencyCode: string) {
     cacheTag(`featured-${locale}-${currencyCode}`);
     cacheTag('products');
 
-    // Fetch featured products from a specific collection
-    // Replace 'featured' with your actual collection slug
     const result = await query(GetCollectionProductsQuery, {
-        slug: "electronics",
+        slug: "featured-products",
         input: {
-            collectionSlug: "electronics",
+            collectionSlug: "featured-products",
             take: 12,
             skip: 0,
             groupByProduct: true

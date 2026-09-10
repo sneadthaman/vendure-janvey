@@ -16,6 +16,12 @@ Useful links:
 
 ## Development
 
+Start Docker Desktop first. `npm run dev` checks the API/dashboard ports and the
+database credentials before starting Vendure. It automatically starts the local
+Compose PostgreSQL service on port 6543 when needed and waits for it to be healthy.
+An externally configured database must already be running. The same database check
+also runs for `npm run dev:server` and `npm run dev:worker`.
+
 ```
 npm run dev
 ```

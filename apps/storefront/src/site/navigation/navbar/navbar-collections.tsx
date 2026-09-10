@@ -5,8 +5,11 @@ import {
     NavigationMenu,
     NavigationMenuList,
     NavigationMenuItem,
+    NavigationMenuContent,
+    NavigationMenuLink,
+    NavigationMenuTrigger,
 } from '@/components/ui/navigation-menu';
-import {NavbarLink} from '@/site/navigation/navbar/navbar-link';
+import {NavigationLink} from '@/site/navigation/navigation-link';
 
 export async function NavbarCollections() {
     "use cache";
@@ -22,9 +25,13 @@ export async function NavbarCollections() {
             <NavigationMenuList>
                 {collections.map((collection) => (
                     <NavigationMenuItem key={collection.slug}>
-                        <NavbarLink href={`/collection/${collection.slug}`}>
-                            {collection.name}
-                        </NavbarLink>
+                        <NavigationMenuTrigger className="bg-transparent px-2 text-xs lg:px-3 xl:text-sm">{collection.name}</NavigationMenuTrigger>
+                        <NavigationMenuContent className="min-w-72 p-3">
+                            <NavigationMenuLink render={<NavigationLink href={`/collection/${collection.slug}`} className="font-semibold" />}>Shop all {collection.name}</NavigationMenuLink>
+                            <div className="mt-1 grid gap-1">
+                                {collection.children?.map(child=><NavigationMenuLink key={child.slug} render={<NavigationLink href={`/collection/${child.slug}`} />}>{child.name}</NavigationMenuLink>)}
+                            </div>
+                        </NavigationMenuContent>
                     </NavigationMenuItem>
                 ))}
             </NavigationMenuList>

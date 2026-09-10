@@ -12,8 +12,8 @@ type ActiveOrder = {
     lines: Array<{
         id: string;
         quantity: number;
-        unitPriceWithTax: number;
-        linePriceWithTax: number;
+        unitPrice: number;
+        linePrice: number;
         productVariant: {
             id: string;
             name: string;
@@ -83,7 +83,7 @@ export async function CartItems({activeOrder}: { activeOrder: ActiveOrder | null
                             {t('sku', {sku: line.productVariant.sku})}
                         </p>
                         <p className="text-sm text-muted-foreground mt-2 sm:hidden">
-                            <Price value={line.unitPriceWithTax} currencyCode={activeOrder.currencyCode}/> {t('each')}
+                            <Price value={line.unitPrice} currencyCode={activeOrder.currencyCode}/> {t('each')}
                         </p>
 
                         <div className="flex items-center gap-3 mt-4">
@@ -142,7 +142,7 @@ export async function CartItems({activeOrder}: { activeOrder: ActiveOrder | null
 
                             <div className="sm:hidden ml-auto">
                                 <p className="font-semibold text-lg">
-                                    <Price value={line.linePriceWithTax}
+                                    <Price value={line.linePrice}
                                            currencyCode={activeOrder.currencyCode}/>
                                 </p>
                             </div>
@@ -151,10 +151,10 @@ export async function CartItems({activeOrder}: { activeOrder: ActiveOrder | null
 
                     <div className="hidden sm:block text-right flex-shrink-0">
                         <p className="font-semibold text-lg">
-                            <Price value={line.linePriceWithTax} currencyCode={activeOrder.currencyCode}/>
+                            <Price value={line.linePrice} currencyCode={activeOrder.currencyCode}/>
                         </p>
                         <p className="text-sm text-muted-foreground mt-1">
-                            <Price value={line.unitPriceWithTax} currencyCode={activeOrder.currencyCode}/> {t('each')}
+                            <Price value={line.unitPrice} currencyCode={activeOrder.currencyCode}/> {t('each')}
                         </p>
                     </div>
                 </div>
