@@ -1,0 +1,9 @@
+{{> header title="Order approval required"}}
+
+<mj-section><mj-column><mj-text>
+    <p>{{requesterName}} submitted order <strong>#{{order.code}}</strong> for {{accountName}}.</p>
+    <p>Total: <strong>{{formatMoney order.totalWithTax order.currencyCode 'en'}}</strong></p>
+    <p><a href="{{approvalUrl}}">Review the pending order</a></p>
+</mj-text></mj-column></mj-section>
+
+{{> footer}}

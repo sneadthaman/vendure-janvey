@@ -9,9 +9,10 @@ import {useTranslations} from 'next-intl';
 interface ProductCardProps {
     product: FragmentOf<typeof ProductCardFragment>;
     preload?: boolean;
+    priceOverride?: number;
 }
 
-export function ProductCard({product: productProp, preload}: ProductCardProps) {
+export function ProductCard({product: productProp, preload, priceOverride}: ProductCardProps) {
     const t = useTranslations('Product');
     const product = readFragment(ProductCardFragment, productProp);
 
@@ -42,7 +43,7 @@ export function ProductCard({product: productProp, preload}: ProductCardProps) {
                 </h3>
                 <Suspense fallback={<div className="h-8 w-36 rounded bg-muted"></div>}>
                     <p className="text-lg font-bold tracking-tight">
-                        {product.price.__typename === 'PriceRange' ? (
+                        {priceOverride!==undefined?<Price value={priceOverride} currencyCode={product.currencyCode}/>:product.price.__typename === 'PriceRange' ? (
                             product.price.min !== product.price.max ? (
                                 <>
                                     <span className="text-xs font-normal text-muted-foreground mr-1">{t('from')}</span>

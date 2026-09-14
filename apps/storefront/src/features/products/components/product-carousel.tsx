@@ -9,9 +9,10 @@ interface ProductCarouselClientProps {
     title: string;
     products: Array<FragmentOf<typeof ProductCardFragment>>;
     preloadFirstProduct?: boolean;
+    priceBySku?:Record<string,number>;
 }
 
-export function ProductCarousel({title, products, preloadFirstProduct}: ProductCarouselClientProps) {
+export function ProductCarousel({title, products, preloadFirstProduct,priceBySku={}}: ProductCarouselClientProps) {
     return (
         <section className="py-12 md:py-16">
             <div className="container mx-auto px-4">
@@ -27,7 +28,7 @@ export function ProductCarousel({title, products, preloadFirstProduct}: ProductC
                         {products.map((product, index) => (
                             <CarouselItem key={readFragment(ProductCardFragment, product).productId}
                                           className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-                                <ProductCard product={product} preload={preloadFirstProduct && index === 0}/>
+                                <ProductCard product={product} preload={preloadFirstProduct && index === 0} priceOverride={priceBySku[readFragment(ProductCardFragment,product).sku]}/>
                             </CarouselItem>
                         ))}
                     </CarouselContent>

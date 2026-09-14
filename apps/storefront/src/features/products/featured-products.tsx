@@ -10,6 +10,7 @@ import {getTranslations} from 'next-intl/server';
 import {preconnect} from 'react-dom';
 import {readFragment} from '@/platform/vendure/graphql';
 import {ProductCardFragment} from '@/features/products/graphql';
+import {getActiveNetsuitePriceMap} from '@/features/b2b';
 
 function getAssetOrigin(preview?: string) {
     if (!preview) return undefined;
@@ -48,6 +49,7 @@ export async function FeaturedProducts() {
     const currencyCode = await getActiveCurrencyCode();
     const t = await getTranslations({locale, namespace: 'Product'});
     const products = await getFeaturedCollectionProducts(currencyCode);
+    const priceBySku=await getActiveNetsuitePriceMap(products.map(product=>readFragment(ProductCardFragment,product).sku));
     const firstProduct = products[0]
         ? readFragment(ProductCardFragment, products[0])
         : undefined;
@@ -63,6 +65,7 @@ export async function FeaturedProducts() {
                 title={t('featuredProducts')}
                 products={products}
                 preloadFirstProduct
+                priceBySku={priceBySku}
             />
             <div className="container mx-auto px-4 -mt-6 mb-8">
                 <div className="flex justify-center">

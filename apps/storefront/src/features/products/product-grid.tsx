@@ -5,6 +5,9 @@ import {SortDropdown} from '@/features/search/sort-dropdown';
 import {SearchProductsQuery} from '@/features/search/graphql';
 import {getRouteLocale} from '@/platform/i18n/server';
 import {getTranslations} from 'next-intl/server';
+import {getActiveNetsuitePriceMap} from '@/features/b2b';
+import {readFragment} from '@/platform/vendure/graphql';
+import {ProductCardFragment} from './graphql';
 
 interface ProductGridProps {
     productDataPromise: Promise<{
@@ -21,6 +24,7 @@ export async function ProductGrid({productDataPromise, currentPage, take}: Produ
     const result = await productDataPromise;
 
     const searchResult = result.data.search;
+    const priceMap=await getActiveNetsuitePriceMap(searchResult.items.map(item=>readFragment(ProductCardFragment,item).sku));
     const totalPages = Math.ceil(searchResult.totalItems / take);
 
     if (!searchResult.items.length) {
@@ -42,7 +46,7 @@ export async function ProductGrid({productDataPromise, currentPage, take}: Produ
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {searchResult.items.map((product, i) => (
-                    <ProductCard key={'product-grid-item' + i} product={product}/>
+                    <ProductCard key={'product-grid-item' + i} product={product} priceOverride={priceMap[readFragment(ProductCardFragment,product).sku]}/>
                 ))}
             </div>
 

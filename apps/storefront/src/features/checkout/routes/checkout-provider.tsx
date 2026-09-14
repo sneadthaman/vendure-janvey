@@ -41,6 +41,17 @@ interface PaymentMethod {
   eligibilityMessage?: string | null;
 }
 
+interface NetsuiteAddress {
+  id:string; label?:string|null; addressee?:string|null; attention?:string|null;
+  streetLine1:string; streetLine2?:string|null; city:string; province:string; postalCode:string;
+  countryCode:string; phoneNumber?:string|null; defaultBilling:boolean; defaultShipping:boolean;
+}
+
+interface NetsuiteAccount {
+  id:string; companyName:string; requiresApproval:boolean; canApproveOrders:boolean;
+  defaultShippingAddressId?:string|null; addresses:NetsuiteAddress[];
+}
+
 interface CheckoutContextType {
   order: CheckoutOrder;
   addresses: CustomerAddress[];
@@ -50,6 +61,7 @@ interface CheckoutContextType {
   selectedPaymentMethodCode: string | null;
   setSelectedPaymentMethodCode: (code: string | null) => void;
   isGuest: boolean;
+  netsuiteAccount: NetsuiteAccount | null;
 }
 
 const CheckoutContext = createContext<CheckoutContextType | null>(null);
@@ -62,6 +74,7 @@ interface CheckoutProviderProps {
   shippingMethods: ShippingMethod[];
   paymentMethods: PaymentMethod[];
   isGuest: boolean;
+  netsuiteAccount: NetsuiteAccount | null;
 }
 
 export function CheckoutProvider({
@@ -72,6 +85,7 @@ export function CheckoutProvider({
   shippingMethods,
   paymentMethods,
   isGuest,
+  netsuiteAccount,
 }: CheckoutProviderProps) {
   const [selectedPaymentMethodCode, setSelectedPaymentMethodCode] = useState<string | null>(
     paymentMethods.length === 1 ? paymentMethods[0].code : null
@@ -88,6 +102,7 @@ export function CheckoutProvider({
         selectedPaymentMethodCode,
         setSelectedPaymentMethodCode,
         isGuest,
+        netsuiteAccount,
       }}
     >
       {children}

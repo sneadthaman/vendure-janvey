@@ -56,6 +56,7 @@
     "qty": "Menge: {quantity}",
     "skuLabel": "Art.-Nr.: {sku}",
     "addresses": "Adressen",
+    "approvals": "Freigaben",
     "manageAddresses": "Verwalten Sie Ihre gespeicherten Liefer- und Rechnungsadressen",
     "addNewAddress": "Neue Adresse hinzufügen",
     "noAddressesSaved": "Noch keine Adressen gespeichert",

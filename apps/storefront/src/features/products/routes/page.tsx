@@ -43,7 +43,7 @@ async function getProductData(slug: string, currencyCode: string) {
     cacheTag(`product-${slug}-${locale}-${currencyCode}`);
     cacheTag('products');
 
-    return await query(GetProductDetailQuery, {slug}, {languageCode: locale, currencyCode});
+    return await query(GetProductDetailQuery, {slug}, {languageCode: locale, currencyCode,useAuthToken:true});
 }
 
 export async function generateMetadata({

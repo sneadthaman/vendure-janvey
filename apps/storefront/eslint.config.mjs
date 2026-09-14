@@ -3,6 +3,7 @@ import nextTypescript from "eslint-config-next/typescript";
 const featureNames = [
   "account",
   "authentication",
+  "b2b",
   "cart",
   "checkout",
   "collections",

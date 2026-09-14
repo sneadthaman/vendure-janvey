@@ -1,0 +1,20 @@
+{
+  "B2B": {
+    "approvals": "Order approvals",
+    "notLinkedTitle": "Business account not linked",
+    "notLinkedBody": "Ask a staff member to link your login to the correct NetSuite customer account.",
+    "submitted": "Order #{code} was submitted for approval.",
+    "waitingForMe": "Waiting for my approval",
+    "nonePending": "No orders are waiting for your approval.",
+    "myRequests": "My approval requests",
+    "noneRequested": "You have not submitted an order for approval.",
+    "commentOptional": "Change note (optional)",
+    "decisionComment": "Decision comment (optional)",
+    "saveChanges": "Save and reprice",
+    "approve": "Approve",
+    "reject": "Reject",
+    "cancel": "Cancel",
+    "cancelRequest": "Cancel request",
+    "auditHistory": "Audit history ({count})"
+  }
+}

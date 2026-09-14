@@ -5,7 +5,7 @@ import crypto from 'crypto-js';
 import { lstat, readdir, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import { NETSUITE_SYNC_PLUGIN_OPTIONS } from '../constants';
-import { NetsuiteWebStoreItem, NetsuiteWebStoreItemsResponse, NetsuitePricesResponse, NetsuitePrice, NetsuiteImagesResponse, NetsuiteImageFile, PluginInitOptions } from '../types';
+import { NetsuiteWebStoreItem, NetsuiteWebStoreItemsResponse, NetsuitePricesResponse, NetsuitePrice, NetsuiteImagesResponse, NetsuiteImageFile, PluginInitOptions, NetsuiteCustomerResponse, NetsuiteCustomerCandidate, NetsuiteCustomerSearchResponse } from '../types';
 
 @Injectable()
 export class NetsuiteService {
@@ -59,18 +59,43 @@ export class NetsuiteService {
     async fetchWebStoreItems(): Promise<NetsuiteWebStoreItem[]> {return (await this.fetchCatalog()).items;}
 
     async fetchOnlinePrices(skus:string[]): Promise<Map<string,NetsuitePrice>> {
+        return this.fetchPrices(null,skus);
+    }
+
+    async fetchCustomerPrices(customerId:string,skus:string[]):Promise<Map<string,NetsuitePrice>> {
+        if(!/^\d+$/.test(customerId))throw new Error('NetSuite customer ID must be numeric.');
+        return this.fetchPrices(customerId,skus);
+    }
+
+    private async fetchPrices(customerId:string|null,skus:string[]): Promise<Map<string,NetsuitePrice>> {
         const unique=[...new Set(skus)], result=new Map<string,NetsuitePrice>();
         for(let offset=0;offset<unique.length;offset+=100) {
             const batch=unique.slice(offset,offset+100);
-            const page=await this.request<NetsuitePricesResponse>(this.options.pricingUrl,'POST',undefined,{customerId:null,skus:batch});
-            if(page.success!==true||page.currencyCode!=='USD'||!Array.isArray(page.prices)) throw new Error('Invalid guest pricing response.');
+            const page=await this.request<NetsuitePricesResponse>(this.options.pricingUrl,'POST',undefined,{customerId,skus:batch});
+            if(page.success!==true||page.currencyCode!=='USD'||!Array.isArray(page.prices)) throw new Error(`Invalid ${customerId?'customer':'guest'} pricing response.`);
             for(const line of page.prices) {
-                if(!line||!batch.includes(line.sku)||result.has(line.sku)||![line.price,line.basePrice].every(p=>p===null||Number.isInteger(p)&&p>=0&&p<=2147483647)||line.price!==line.basePrice||line.purchasable!==(line.price!==null)) throw new Error('Inconsistent guest pricing row.');
+                const invalidGuest=customerId===null&&line.price!==line.basePrice;
+                if(!line||!batch.includes(line.sku)||result.has(line.sku)||![line.price,line.basePrice].every(p=>p===null||Number.isInteger(p)&&p>=0&&p<=2147483647)||invalidGuest||typeof line.source!=='string'||!line.source||line.purchasable!==(line.price!==null)) throw new Error(`Inconsistent ${customerId?'customer':'guest'} pricing row.`);
                 result.set(line.sku,line);
             }
             if(batch.some(sku=>!result.has(sku))) throw new Error('Pricing response omitted requested SKUs.');
         }
         return result;
+    }
+
+    async fetchCustomer(customerId:string,{diagnostic=false}:{diagnostic?:boolean}={}):Promise<NetsuiteCustomerResponse>{
+        if(!/^\d+$/.test(customerId))throw new Error('NetSuite customer ID must be numeric.');
+        const result=await this.request<NetsuiteCustomerResponse>(this.options.customersUrl,'GET',{customerId,...(diagnostic?{diagnostic:'1'}:{})});
+        if(result.success!==true||result.contractVersion!==1||result.customer?.internalId!==customerId||typeof result.customer.webCustomer!=='boolean'||!Array.isArray(result.addresses)||!Array.isArray(result.contacts)||!Array.isArray(result.issues))throw new Error('Invalid NetSuite customer response.');
+        return result;
+    }
+
+    async searchCustomers(query:string):Promise<NetsuiteCustomerCandidate[]>{
+        const normalized=query.trim();
+        if(normalized.length<2||normalized.length>100)throw new Error('Customer search requires 2 to 100 characters.');
+        const result=await this.request<NetsuiteCustomerSearchResponse>(this.options.customersUrl,'GET',{query:normalized});
+        if(result.success!==true||result.contractVersion!==1||!Array.isArray(result.candidates)||result.candidates.length>25||result.candidates.some(candidate=>!candidate||!/^\d+$/.test(candidate.internalId)||typeof candidate.active!=='boolean'))throw new Error('Invalid NetSuite customer search response.');
+        return result.candidates;
     }
 
     async fetchImages(): Promise<Map<string,NetsuiteImageFile>> {

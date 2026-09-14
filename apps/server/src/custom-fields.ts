@@ -313,26 +313,6 @@ export const customFields: CustomFields = {
   ],
 
   // -------------------------------------------------------------------
-  // Customer
-  // -------------------------------------------------------------------
-  Customer: [
-    {
-      name: 'netsuiteInternalId',
-      type: 'string',
-      nullable: true,
-      unique: true,
-      public: false,
-      label: [{ languageCode: LanguageCode.en, value: 'NetSuite Customer ID' }],
-      description: [{
-        languageCode: LanguageCode.en,
-        value: 'Sent as customerId to the pricing RESTlet. Prefer the internal ' +
-               'id over entity id — it skips a search on every price lookup.'
-      }],
-      ui: { tab: 'NetSuite' },
-    },
-  ],
-
-  // -------------------------------------------------------------------
   // Asset
   // -------------------------------------------------------------------
   Asset: [

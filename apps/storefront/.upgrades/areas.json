@@ -1,6 +1,7 @@
 [
   "account",
   "authentication",
+  "b2b",
   "cart",
   "checkout",
   "collections",

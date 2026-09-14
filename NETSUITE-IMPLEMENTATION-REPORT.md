@@ -138,3 +138,62 @@ All final checks passed:
 Production image refresh still depends on a local File Cabinet export because the token-authenticated NetSuite role cannot enumerate the discontinued SuiteCommerce Web Hosting Files tree. The local archive supplies 68 product images. Two requested image names are absent and two `.jpg` files contain invalid JPEG data, producing the four nonfatal warnings in run 9.
 
 The sync remains manual by design. Customer-specific pricing, customer tax data, inventory, order submission, and a schedule are future phases.
+
+## B2B customer accounts and order approval (implemented locally, 2026-09-14)
+
+The current B2B foundation models a NetSuite customer as one shared `netsuite_account` and each human login as one Vendure Customer linked through `netsuite_contact_link`. Staff create, refresh, link, unlink, and configure those relationships in **Customers > NetSuite customers** in the Vendure Dashboard. A link stores the immutable NetSuite customer and contact identities, contact-level `requiresApproval` and `canApproveOrders` flags, and that contact's own default ship-to selection.
+
+Only Customer Master records with `custentity_web_customer` enabled are eligible for web use. Staff use the existing NetSuite Saved Search **Web Customers** (`customsearch_web_customers`, internal ID `2119`) to find the customer internal ID, then paste that ID into the Dashboard import control. Import loads the individual Customer Master record and enforces `custentity_web_customer` directly, so staff cannot bypass the rule by entering an unflagged customer ID. Customer-name searches through NetSuite's `N/search` API returned HTTP 403 for the token-authenticated role despite the configured audience and unrestricted deployment, so the integration deliberately does not depend on that API.
+
+NetSuite account addresses are imported into `netsuite_account_address` with immutable NetSuite address IDs. Linked contacts can choose only one of their account's active ship-to addresses during checkout. The selected address is copied to the Vendure order as its checkout-time snapshot; storefront users cannot edit the NetSuite-managed address fields.
+
+Customer-specific prices are requested by shared NetSuite account ID and kept in a request-context cache key that includes that ID and the requested SKUs. Guests retain the public Online Price. The read-only diagnostic verified the required contract:
+
+| Customer | Item | Customer price | Public base price | Source |
+| --- | --- | ---: | ---: | --- |
+| NetSuite `725` | `MAJ R04032` / internal ID `5644` | 51,548 cents | 60,139 cents | `customer_specific_item_pricing` |
+
+Approval-required contacts submit a checked-out cart into `PendingApproval`. It cannot move into payment and is not export-eligible. Account approvers receive a login-safe email, can view only their own account's requests, change permitted quantities or lines, change the permitted ship-to, comment, approve, reject, or cancel. Each action is audited with actor, timestamp, comment, and totals. Quantity changes use Vendure's supported `AddingItems` operation inside one protected database transaction, then return to `PendingApproval` after authoritative repricing and tax recalculation. Direct purchasers retain the normal checkout state progression.
+
+The migration `1789131094210-netsuite-b2b-foundation.ts` creates account, address, contact-link, customer-sync-run, approval, and approval-event storage. It preserves existing legacy customer links when upgrading, restores the legacy field on downgrade, and changes existing shipping methods to the address-aware shipping tax calculator.
+
+### B2B live verification
+
+The live local end-to-end workflow completed against the running Vendure API and worker:
+
+- guest catalog price and authenticated account price were kept separate;
+- a non-approval contact reached `ArrangingPayment` normally;
+- an approval-required contact could not bypass to payment;
+- two contacts shared one account with different default ship-to addresses;
+- selecting a fixture ship-to on customer `725` copied that address to the order while retaining customer `725`'s authoritative default bill-to address for tax-zone selection;
+- a requester submitted an order, an approver modified quantity, the order repriced and recalculated tax, then the approver approved it;
+- a second request was rejected with an audited reason;
+- self-approval and cross-account access were denied;
+- export eligibility was `false` before approval and `true` only after approval, repricing, and tax validation;
+- request, approval, and rejection emails were rendered by the Vendure email worker; every configured approver received the request notification;
+- the final verified taxable example had 7,315-cent merchandise net / 8,778 gross and 500-cent shipping net / 600 gross, using the account bill-to tax zone.
+
+Backend TypeScript checking, B2B policy and RESTlet contract tests, NetSuite client tests, dashboard/server/worker production build, storefront tests, lint, type checking, upgrade validation, and storefront production build all passed. Local HTTP checks returned 200 for the server health endpoint, dashboard, account approvals page, and checkout page.
+
+### Required NetSuite deployment and tax-parity follow-up
+
+`netsuite/vendure-netsuite-customers-restlet.js` is deployed under the existing token-based authentication integration and configured in the local environment. A live read-only call for customer `725` confirmed contract version 1, 20 stable addresses, 37 contacts, `taxable=true`, and the discovered `taxitem`, `resalenumber`, and `vatregnumber` fields. Staff import then created or refreshed the shared `SACHEM CENTRAL SCHOOLS` account with those 20 active addresses and no linked test contacts. Its active tax item is `28` / `Exempt Suffolk`; this demonstrates why address- and account-specific tax parity must be measured instead of inferred from a fixed rate. Run `node scripts/netsuite-b2b-diagnostic.cjs --verbose` only when the full field-discovery payload is needed.
+
+The Vendure tax-zone strategy now uses the order billing address, not its shipping address. For a linked NetSuite contact, selecting a ship-to sets that fulfillment address and also sets the account's active NetSuite default billing address on the order. This preserves NetSuite as the address authority and applies its bill-to tax basis. Imported exempt accounts continue to receive zero line and shipping tax. Exact NetSuite tax parity is deliberately not claimed yet: it needs one representative web-enabled taxable account and one representative web-enabled exempt account, each with NetSuite totals for the same catalog items and shipping method. Compare those cases with `scripts/netsuite-b2b-diagnostic.cjs` before treating the configuration as production tax parity. If SuiteTax, nexus, tax-code selection, or rounding differs, the next phase should add a read-only NetSuite tax-quote diagnostic rather than guessing at a fixed rate.
+
+The current local Vendure tax data is still scaffold data: its Americas standard rate is 20%. It does not match customer `712`'s NetSuite tax item `5` / Nassau County and must not be treated as tax-parity configuration. The customer RESTlet now includes a diagnostic-only read of the linked `SALES_TAX_ITEM` record and discovers rate-related fields at runtime. Deploy that RESTlet revision, then run `node scripts/netsuite-b2b-diagnostic.cjs 712 "KCC 1804" --verbose` to capture the real rate contract before creating a managed Vendure tax mapping.
+
+The deployed diagnostic confirmed that tax item `5` has a `rate` of 8.625%. The additive `NetsuiteAccountTaxRate` migration is applied, and refreshing customer `712` persisted `taxRate=8.625`. Linked taxable order lines now use the refreshed account rate and shipping copies the line rate; missing or invalid rate data blocks checkout safely. This confirms the tax-item rate contract and bill-to selection, but a web-enabled exempt customer remains necessary for final dual-case parity verification.
+
+Sachem Central Schools (`725`) provides the zero-tax counterpart. NetSuite reports `taxable=T` and tax item `28` / `Exempt Suffolk`, whose authoritative rate is 0.00%. Its exact customer-specific price for item `5644` / `MAJ R04032` remains 51,548 cents against a 60,139-cent base price. The refreshed local approval workflow confirmed a zero-tax order: 7,315-cent merchandise net and gross, plus 500-cent shipping net and gross. The source taxability metadata is retained while its assigned NetSuite tax item determines the effective zero rate.
+
+Prof Maintenance (`712`) provides the taxable counterpart. Its live workflow used `KCC 1804` (NetSuite item `1968`): the guest price was 7,688 cents, the account price was 6,590 cents, and the persisted 8.625% tax item produced a 7,158-cent line gross and 543-cent shipping gross from 500 cents net. The workflow also verified requester submission, approver modification, approval, rejection, notification generation, and export ineligibility before approval.
+
+Two historical NetSuite sales-order PDFs now provide the expected tax outcomes. They are reference evidence, not final live-parity proof, because the PDFs do not include immutable customer or ship-to address IDs:
+
+| Case | NetSuite order | Customer / ship-to | Lines | Merchandise subtotal | Shipping | Tax | Total |
+| --- | --- | --- | --- | ---: | ---: | ---: | ---: |
+| Taxable | `SO310021` | PROF MAINTENANCE OF LI / PMLI At Mather Hospital | 2 × `SSS 37033` at $69.57 | $139.14 | $0.00 shown | $12.00 at 8.625% | $151.14 |
+| Exempt | `SO310066` | NYU LANGONE HOSPITAL / NYU Langone Patchogue ASC | 2 × `KCC 1804` ($53.76), 2 × `BRY 72975` ($75.34) | $129.10 | $0.00 shown | $0.00 | $129.10 |
+
+`KCC 1804` and `BRY 72975` exist in the imported online catalog (NetSuite IDs `1968` and `1351`). `SSS 37033` is not an online-catalog item, so that taxable order cannot be replayed in Vendure as written. Customer `712` (PROF MAINTENANCE OF LI) is web-enabled and was refreshed successfully with six active addresses, including exactly one active default billing address and one default shipping address. A live read-only check returned its `KCC 1804` contract price as 6,590 cents against a 7,688-cent base price, sourced from `customer_price_level`; its NetSuite tax item is `5` / `Nassau County`. Customer `649` (NYU) correctly remains ineligible for import because it is not marked `custentity_web_customer`; it must be marked as a web customer, or another web-enabled exempt customer must be supplied, before its exempt order can be replayed in Vendure. A taxable order containing an online-catalog item would provide the strongest final replay case.

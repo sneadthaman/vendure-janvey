@@ -125,7 +125,77 @@ export interface PluginInitOptions {
   itemsUrl?: string;
   pricingUrl?: string;
   imagesUrl?: string;
+  customersUrl?: string;
   localImagesPath?: string;
+}
+
+export interface NetsuiteCustomerAddress {
+  internalId:string|null;
+  label:string|null;
+  defaultBilling:boolean;
+  defaultShipping:boolean;
+  addressee:string|null;
+  attention:string|null;
+  streetLine1:string|null;
+  streetLine2:string|null;
+  city:string|null;
+  province:string|null;
+  postalCode:string|null;
+  countryCode:string|null;
+  phoneNumber:string|null;
+}
+
+export interface NetsuiteCustomerContact {
+  internalId:string;
+  entityId:string|null;
+  firstName:string|null;
+  lastName:string|null;
+  emailAddress:string|null;
+  phoneNumber:string|null;
+  active:boolean;
+}
+
+export interface NetsuiteCustomerCandidate {
+  internalId:string;
+  entityId:string|null;
+  companyName:string|null;
+  active:boolean;
+}
+
+export interface NetsuiteCustomerSearchResponse {
+  success:boolean;
+  contractVersion:number;
+  candidates:NetsuiteCustomerCandidate[];
+  remainingUsage?:number;
+}
+
+export interface NetsuiteCustomerResponse {
+  success:boolean;
+  contractVersion:number;
+  customer:{
+    internalId:string;
+    entityId:string|null;
+    companyName:string|null;
+    emailAddress:string|null;
+    phoneNumber:string|null;
+    priceLevelId:string|null;
+    priceLevelName:string|null;
+    webCustomer:boolean;
+    active:boolean;
+    taxMetadata:Record<string,{value:unknown;text:unknown}>;
+    taxItem:{internalId:string;rateFields?:Record<string,{value:unknown;text:unknown}>;issue?:string}|null;
+  };
+  addresses:NetsuiteCustomerAddress[];
+  contacts:NetsuiteCustomerContact[];
+  issues:string[];
+  diagnostics?:{
+    bodyFields:string[];
+    taxFields:string[];
+    taxItem?:{internalId:string;rateFields?:Record<string,{value:unknown;text:unknown}>;issue?:string}|null;
+    addressbookFields:string[];
+    addressFields:string[];
+  };
+  remainingUsage?:number;
 }
 
 /**

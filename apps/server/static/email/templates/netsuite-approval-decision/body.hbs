@@ -1,0 +1,9 @@
+{{> header title="Order status update"}}
+
+<mj-section><mj-column><mj-text>
+    <p>Order <strong>#{{order.code}}</strong> was {{decision}} by {{actorName}}.</p>
+    {{#if comment}}<p>Comment: {{comment}}</p>{{/if}}
+    <p><a href="{{orderUrl}}">View the order</a></p>
+</mj-text></mj-column></mj-section>
+
+{{> footer}}

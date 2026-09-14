@@ -11,6 +11,7 @@ import {CheckoutProvider} from './checkout-provider';
 import {noIndexRobots} from '@/config/metadata';
 import {getActiveCustomer} from '@/features/account/customer';
 import {getAvailableCountriesCached} from '@/features/checkout/countries';
+import {getActiveNetsuiteAccount} from '@/features/b2b';
 
 export async function generateMetadata(): Promise<Metadata> {
     const locale = await getRouteLocale();
@@ -28,7 +29,7 @@ export default async function CheckoutPage() {
     const customer = await getActiveCustomer();
     const isGuest = !customer;
 
-    const [orderRes, addressesRes, countries, shippingMethodsRes, paymentMethodsRes] =
+    const [orderRes, addressesRes, countries, shippingMethodsRes, paymentMethodsRes,netsuiteAccount] =
         await Promise.all([
             query(GetActiveOrderForCheckoutQuery, {}, {useAuthToken: true, currencyCode}),
             isGuest
@@ -37,6 +38,7 @@ export default async function CheckoutPage() {
             getAvailableCountriesCached(locale),
             query(GetEligibleShippingMethodsQuery, {}, {useAuthToken: true, currencyCode}),
             query(GetEligiblePaymentMethodsQuery, {}, {useAuthToken: true, currencyCode}),
+            isGuest?Promise.resolve(null):getActiveNetsuiteAccount(),
         ]);
 
     const activeOrder = orderRes.data.activeOrder;
@@ -64,6 +66,7 @@ export default async function CheckoutPage() {
                 shippingMethods={shippingMethods}
                 paymentMethods={paymentMethods}
                 isGuest={isGuest}
+                netsuiteAccount={netsuiteAccount}
             >
                 <CheckoutFlow/>
             </CheckoutProvider>

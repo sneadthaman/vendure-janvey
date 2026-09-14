@@ -16,12 +16,13 @@ type CheckoutStep = 'contact' | 'shipping' | 'delivery' | 'payment' | 'review';
 
 export default function CheckoutFlow() {
   const t = useTranslations('Checkout');
-  const { order, isGuest } = useCheckout();
+  const { order, isGuest, netsuiteAccount } = useCheckout();
 
   const getStepOrder = (): CheckoutStep[] => {
     if (isGuest) {
       return ['contact', 'shipping', 'delivery', 'payment', 'review'];
     }
+    if(netsuiteAccount?.requiresApproval)return ['shipping','delivery','review'];
     return ['shipping', 'delivery', 'payment', 'review'];
   };
 
@@ -225,7 +226,7 @@ export default function CheckoutFlow() {
             </AccordionContent>
           </AccordionItem>
 
-          <AccordionItem
+          {!netsuiteAccount?.requiresApproval&&<AccordionItem
             value="payment"
             className="border rounded-lg px-6"
             disabled={!canAccessStep('payment')}
@@ -252,7 +253,7 @@ export default function CheckoutFlow() {
                 onComplete={() => handleStepComplete('payment')}
               />
             </AccordionContent>
-          </AccordionItem>
+          </AccordionItem>}
 
           <AccordionItem
             value="review"

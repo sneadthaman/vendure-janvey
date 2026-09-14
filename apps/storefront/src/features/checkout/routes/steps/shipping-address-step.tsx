@@ -16,6 +16,7 @@ import { useCheckout } from '../checkout-provider';
 import { setShippingAddress, createCustomerAddress } from '../actions';
 import { CountrySelect } from '@/components/ui/country-select';
 import {useTranslations} from 'next-intl';
+import {selectNetsuiteShipTo} from '@/features/b2b/actions';
 
 interface ShippingAddressStepProps {
   onComplete: () => void;
@@ -36,8 +37,11 @@ interface AddressFormData {
 export default function ShippingAddressStep({ onComplete }: ShippingAddressStepProps) {
   const t = useTranslations('Checkout');
   const router = useRouter();
-  const { addresses, countries, order, isGuest } = useCheckout();
+  const { addresses, countries, order, isGuest, netsuiteAccount } = useCheckout();
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(() => {
+    if (netsuiteAccount) {
+      return netsuiteAccount.defaultShippingAddressId || netsuiteAccount.addresses.find(address => address.defaultShipping)?.id || null;
+    }
     if (order.shippingAddress) {
       const matchingAddress = addresses.find(
         (a) =>
@@ -140,6 +144,33 @@ export default function ShippingAddressStep({ onComplete }: ShippingAddressStepP
       setLoading(false);
     }
   };
+
+  const handleSelectNetsuiteAddress=async()=>{
+    if(!selectedAddressId)return;
+    setLoading(true);
+    try{await selectNetsuiteShipTo(selectedAddressId);router.refresh();onComplete();}
+    finally{setLoading(false);}
+  };
+
+  if(netsuiteAccount){
+    return <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">{t('netsuiteAddressesManaged',{companyName:netsuiteAccount.companyName})}</p>
+      <p className="text-sm text-muted-foreground">{t('netsuiteBillToTax')}</p>
+      <RadioGroup value={selectedAddressId||''} onValueChange={setSelectedAddressId}>
+        {netsuiteAccount.addresses.map(address=><div key={address.id} className="flex items-start space-x-3">
+          <RadioGroupItem value={address.id} id={`netsuite-address-${address.id}`} className="mt-1"/>
+          <Label htmlFor={`netsuite-address-${address.id}`} className="flex-1 cursor-pointer"><Card className="p-4">
+            <p className="font-medium">{address.label||address.addressee||netsuiteAccount.companyName}</p>
+            <p className="text-sm text-muted-foreground">{address.streetLine1}{address.streetLine2?`, ${address.streetLine2}`:''}</p>
+            <p className="text-sm text-muted-foreground">{address.city}, {address.province} {address.postalCode}</p>
+          </Card></Label>
+        </div>)}
+      </RadioGroup>
+      <Button onClick={handleSelectNetsuiteAddress} disabled={!selectedAddressId||loading} className="w-full">
+        {loading&&<Loader2 className="mr-2 h-4 w-4 animate-spin"/>}{t('continueWithSelected')}
+      </Button>
+    </div>;
+  }
 
   if (isGuest) {
     return (

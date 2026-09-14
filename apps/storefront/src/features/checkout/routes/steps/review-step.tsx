@@ -7,6 +7,7 @@ import { useCheckout } from '../checkout-provider';
 import { placeOrder as placeOrderAction } from '../actions';
 import { Price } from '@/features/pricing/price';
 import {useTranslations} from 'next-intl';
+import {submitOrderForApproval} from '@/features/b2b/actions';
 
 interface ReviewStepProps {
   onEditStep: (step: 'contact' | 'shipping' | 'delivery' | 'payment') => void;
@@ -14,7 +15,8 @@ interface ReviewStepProps {
 
 export default function ReviewStep({ onEditStep }: ReviewStepProps) {
   const t = useTranslations('Checkout');
-  const { order, paymentMethods, selectedPaymentMethodCode, isGuest } = useCheckout();
+  const { order, paymentMethods, selectedPaymentMethodCode, isGuest, netsuiteAccount } = useCheckout();
+  const requiresApproval=Boolean(netsuiteAccount?.requiresApproval);
   const [loading, setLoading] = useState(false);
 
   const selectedPaymentMethod = paymentMethods.find(
@@ -22,6 +24,12 @@ export default function ReviewStep({ onEditStep }: ReviewStepProps) {
   );
 
   const handlePlaceOrder = async () => {
+    if(requiresApproval){
+      setLoading(true);
+      try{await submitOrderForApproval(netsuiteAccount?.defaultShippingAddressId??undefined);}
+      catch(error){if(error instanceof Error&&error.message.includes('NEXT_REDIRECT'))throw error;console.error('Error submitting order:',error);setLoading(false);}
+      return;
+    }
     if (!selectedPaymentMethodCode) return;
 
     setLoading(true);
@@ -40,7 +48,7 @@ export default function ReviewStep({ onEditStep }: ReviewStepProps) {
     <div className="space-y-6">
       <h3 className="font-semibold text-lg">{t('reviewYourOrder')}</h3>
 
-      <div className={`grid grid-cols-1 gap-6 ${isGuest ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-3'}`}>
+        <div className={`grid grid-cols-1 gap-6 ${isGuest ? 'md:grid-cols-2 lg:grid-cols-4' : requiresApproval?'md:grid-cols-2':'md:grid-cols-3'}`}>
         {isGuest && order.customer && (
           <div className="space-y-3">
             <div className="flex items-center gap-2">
@@ -131,7 +139,7 @@ export default function ReviewStep({ onEditStep }: ReviewStepProps) {
         </div>
 
         {/* Payment Method */}
-        <div className="space-y-3">
+        {!requiresApproval&&<div className="space-y-3">
           <div className="flex items-center gap-2">
             <CreditCard className="h-5 w-5 text-muted-foreground" />
             <h4 className="font-medium">{t('paymentMethod')}</h4>
@@ -156,20 +164,20 @@ export default function ReviewStep({ onEditStep }: ReviewStepProps) {
           ) : (
             <p className="text-sm text-muted-foreground">{t('noPaymentMethod')}</p>
           )}
-        </div>
+        </div>}
       </div>
 
       <Button
         onClick={handlePlaceOrder}
-        disabled={loading || !order.shippingAddress || !order.shippingLines?.length || !selectedPaymentMethodCode}
+        disabled={loading || !order.shippingAddress || !order.shippingLines?.length || (!requiresApproval&&!selectedPaymentMethodCode)}
         size="lg"
         className="w-full"
       >
         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        {t('placeOrder')}
+        {requiresApproval?t('submitForApproval'):t('placeOrder')}
       </Button>
 
-      {(!order.shippingAddress || !order.shippingLines?.length || !selectedPaymentMethodCode) && (
+      {(!order.shippingAddress || !order.shippingLines?.length || (!requiresApproval&&!selectedPaymentMethodCode)) && (
         <p className="text-sm text-destructive text-center">
           {t('completeAllSteps')}
         </p>

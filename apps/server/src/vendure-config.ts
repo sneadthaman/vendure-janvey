@@ -1,5 +1,4 @@
 import {
-    AddressBasedTaxZoneStrategy,
     dummyPaymentHandler,
     DefaultJobQueuePlugin,
     DefaultSchedulerPlugin,
@@ -7,6 +6,7 @@ import {
     VendureConfig,
 } from '@vendure/core';
 import { defaultEmailHandlers, EmailPlugin, FileBasedTemplateLoader } from '@vendure/email-plugin';
+import { netsuiteEmailHandlers } from './plugins/netsuite-sync/netsuite-email-handlers';
 import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import { DashboardPlugin } from '@vendure/dashboard/plugin';
 import { GraphiqlPlugin } from '@vendure/graphiql-plugin';
@@ -14,6 +14,7 @@ import 'dotenv/config';
 import { existsSync } from 'node:fs';
 import path from 'path';
 import { NetsuiteSyncPlugin } from './plugins/netsuite-sync/netsuite-sync.plugin';
+import { NetsuiteBillToTaxZoneStrategy } from './plugins/netsuite-sync/b2b-strategies';
 import { customFields } from './custom-fields';
 
 const IS_DEV = process.env.APP_ENV === 'dev';
@@ -77,8 +78,8 @@ export const config: VendureConfig = {
         paymentMethodHandlers: [dummyPaymentHandler],
     },
     taxOptions: {
-        // Recalculate checkout tax from the order's shipping-address zone.
-        taxZoneStrategy: new AddressBasedTaxZoneStrategy(),
+        // NetSuite calculates sales tax from the authoritative bill-to address.
+        taxZoneStrategy: new NetsuiteBillToTaxZoneStrategy(),
     },
     // When adding or altering custom field definitions, the database will
     // need to be updated. See the "Migrations" section in README.md.
@@ -100,7 +101,7 @@ export const config: VendureConfig = {
             devMode: true,
             outputPath: path.join(__dirname, '../static/email/test-emails'),
             route: 'mailbox',
-            handlers: defaultEmailHandlers,
+            handlers: [...defaultEmailHandlers, ...netsuiteEmailHandlers],
             templateLoader: new FileBasedTemplateLoader(path.join(__dirname, '../static/email/templates')),
             globalTemplateVars: {
                 // The following variables will change depending on your storefront implementation.
@@ -128,6 +129,7 @@ export const config: VendureConfig = {
                 'https://5013697.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=2212&deploy=1',
             imagesUrl: process.env.NETSUITE_IMAGES_RESTLET_URL ||
                 'https://5013697.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=2213&deploy=1',
+            customersUrl: process.env.NETSUITE_CUSTOMERS_RESTLET_URL,
             // A local File Cabinet export is used only where it actually exists.
             // Production deployments continue to use the read-only RESTlet.
             localImagesPath: existsSync(localImagesPath) ? localImagesPath : undefined,
