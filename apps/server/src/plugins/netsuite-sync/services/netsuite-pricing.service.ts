@@ -18,7 +18,10 @@ export class NetsuitePricingService {
     }
 
     contactForCustomer(ctx:RequestContext,customerId:Customer['id']){
-        return this.requestCache.get(ctx,`netsuite-contact-customer:${customerId}`,()=>this.connection.getRepository(ctx,NetsuiteContactLink).findOne({where:{customerId},relations:{account:true,customer:true,defaultShippingAddress:true}}));
+        return this.requestCache.get(ctx,`netsuite-contact-customer:${customerId}`,()=>this.connection.getRepository(ctx,NetsuiteContactLink).findOne({
+            where:{customerId,active:true,account:{active:true,webCustomer:true}},
+            relations:{account:true,customer:true,defaultShippingAddress:true},
+        }));
     }
 
     async priceForCatalog(ctx:RequestContext,variant:ProductVariant,publicPrice:number):Promise<number>{

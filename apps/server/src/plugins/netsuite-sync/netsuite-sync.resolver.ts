@@ -44,6 +44,8 @@ export const netsuiteAdminSchema=gql`
         netsuiteContactId: String
         requiresApproval: Boolean!
         canApproveOrders: Boolean!
+        active: Boolean!
+        eligibilityIssue: String
         defaultShippingAddress: NetsuiteAccountAddress
     }
     type NetsuiteAccount implements Node {
@@ -57,6 +59,9 @@ export const netsuiteAdminSchema=gql`
         phoneNumber: String
         taxable: Boolean!
         taxExempt: Boolean!
+        active: Boolean!
+        webCustomer: Boolean!
+        eligibilityIssue: String
         taxItemId: String
         taxRegistrationNumber: String
         taxMetadataJson: String

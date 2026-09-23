@@ -3,6 +3,7 @@ import {Customer, ID, RequestContext, TransactionalConnection} from '@vendure/co
 
 import {NetsuiteAccount, NetsuiteAccountAddress, NetsuiteContactLink, NetsuiteCustomerSyncRun} from '../entities';
 import {NetsuiteCustomerAddress, NetsuiteCustomerResponse} from '../types';
+import {accountEligibility, contactEligibility, defaultAddressIsStale} from '../b2b-lifecycle';
 import {NetsuiteService} from './netsuite.service';
 
 interface LinkInput {
@@ -19,6 +20,10 @@ interface UpdateLinkInput {
     requiresApproval?:boolean;
     canApproveOrders?:boolean;
     defaultShippingAddressId?:ID|null;
+}
+
+interface SyncAccountOptions {
+    system?:boolean;
 }
 
 @Injectable()
@@ -40,14 +45,18 @@ export class NetsuiteCustomerService {
         return this.connection.getRepository(ctx,NetsuiteCustomerSyncRun).find({order:{createdAt:'DESC'},take:20});
     }
 
-    async syncAccount(ctx:RequestContext,customerId:string){
-        if(!ctx.activeUserId)throw new Error('Administrator login required.');
+    async syncAccount(ctx:RequestContext,customerId:string,options:SyncAccountOptions={}){
+        if(!options.system&&!ctx.activeUserId)throw new Error('Administrator login required.');
         if(!/^\d+$/.test(customerId))throw new Error('NetSuite customer ID must be numeric.');
         const runRepo=this.connection.getRepository(ctx,NetsuiteCustomerSyncRun);
         const run=await runRepo.save(new NetsuiteCustomerSyncRun({status:'fetching',netsuiteCustomerId:customerId,counts:{accounts:0,addresses:0,contactsFound:0},issues:[],finishedAt:null}));
         try{
             const result=await this.client.fetchCustomer(customerId,{diagnostic:true});
-            if(!result.customer.webCustomer)throw new Error('NetSuite customer is not marked as a web customer.');
+            const eligibility=accountEligibility(result.customer);
+            if(!eligibility.eligible){
+                await this.markAccountIneligible(ctx,customerId,eligibility);
+                throw new Error(eligibility.issue!);
+            }
             const normalized=this.validate(result);
             const account=await this.connection.withTransaction(ctx,async tx=>{
                 const accountRepo=this.connection.getRepository(tx,NetsuiteAccount);
@@ -60,6 +69,7 @@ export class NetsuiteCustomerService {
                     companyName:this.optional(result.customer.companyName)||this.optional(result.customer.entityId)||`NetSuite customer ${customerId}`,
                     emailAddress:this.optional(result.customer.emailAddress),
                     phoneNumber:this.optional(result.customer.phoneNumber),
+                    active:eligibility.active,webCustomer:eligibility.webCustomer,eligibilityIssue:null,
                     taxable,taxExempt,
                     taxItemId:this.taxValue(result,'taxitem'),
                     taxRate:this.taxRate(result),
@@ -83,6 +93,17 @@ export class NetsuiteCustomerService {
                     address.active=false;
                     await addressRepo.save(address);
                 }
+                const activeAddresses=await addressRepo.find({where:{accountId:target.id,active:true}});
+                const activeAddressIds=new Set(activeAddresses.map(address=>String(address.id)));
+                const linkRepo=this.connection.getRepository(tx,NetsuiteContactLink);
+                const links=await linkRepo.find({where:{accountId:target.id}});
+                for(const link of links){
+                    const contact=contactEligibility(link.netsuiteContactId,result.contacts);
+                    link.active=contact.active;
+                    link.eligibilityIssue=contact.issue;
+                    if(defaultAddressIsStale(link.defaultShippingAddressId,activeAddressIds))link.defaultShippingAddressId=null;
+                    await linkRepo.save(link);
+                }
                 return target;
             });
             run.status='completed';
@@ -99,11 +120,34 @@ export class NetsuiteCustomerService {
         }
     }
 
+    async refreshImportedAccounts(ctx:RequestContext){
+        const accounts=await this.connection.getRepository(ctx,NetsuiteAccount).find({order:{id:'ASC'}});
+        const result={attempted:0,completed:0,failed:0,skipped:0,issues:[] as Array<{customerId:string;message:string}>};
+        for(const account of accounts){
+            const customerId=account.netsuiteInternalId;
+            if(!/^\d+$/.test(customerId)){
+                result.skipped++;
+                result.issues.push({customerId,message:'Stored NetSuite customer ID is not numeric.'});
+                continue;
+            }
+            result.attempted++;
+            try{
+                await this.syncAccount(ctx,customerId,{system:true});
+                result.completed++;
+            }catch(error){
+                result.failed++;
+                result.issues.push({customerId,message:error instanceof Error?error.message:'Customer refresh failed.'});
+            }
+        }
+        return result;
+    }
+
     async linkCustomer(ctx:RequestContext,input:LinkInput){
         if(!ctx.activeUserId)throw new Error('Administrator login required.');
         const customer=await this.connection.getRepository(ctx,Customer).findOne({where:{id:input.customerId}});
         if(!customer)throw new Error('Vendure customer not found.');
         const account=await this.findAccount(ctx,input.accountId);
+        if(!account.active||!account.webCustomer)throw new Error(account.eligibilityIssue||'NetSuite account is not eligible for web use.');
         const contactId=this.optional(input.netsuiteContactId);
         if(contactId){
             const live=await this.client.fetchCustomer(account.netsuiteInternalId,{diagnostic:true});
@@ -116,6 +160,7 @@ export class NetsuiteCustomerService {
         return repo.save(new NetsuiteContactLink({
             accountId:account.id,customerId:customer.id,netsuiteContactId:contactId,
             requiresApproval:Boolean(input.requiresApproval),canApproveOrders:Boolean(input.canApproveOrders),
+            active:true,eligibilityIssue:null,
             defaultShippingAddressId:input.defaultShippingAddressId??null,linkedByUserId:String(ctx.activeUserId),
         }));
     }
@@ -145,7 +190,10 @@ export class NetsuiteCustomerService {
         if(!ctx.activeUserId)return undefined;
         const customer=await this.connection.getRepository(ctx,Customer).findOne({where:{user:{id:ctx.activeUserId}},relations:{user:true}});
         if(!customer)return undefined;
-        return this.connection.getRepository(ctx,NetsuiteContactLink).findOne({where:{customerId:customer.id},relations:{account:{addresses:true},customer:true,defaultShippingAddress:true}});
+        return this.connection.getRepository(ctx,NetsuiteContactLink).findOne({
+            where:{customerId:customer.id,active:true,account:{active:true,webCustomer:true}},
+            relations:{account:{addresses:true},customer:true,defaultShippingAddress:true},
+        });
     }
 
     private async findAccount(ctx:RequestContext,id:ID){
@@ -158,6 +206,19 @@ export class NetsuiteCustomerService {
         if(addressId===undefined||addressId===null)return;
         const address=await this.connection.getRepository(ctx,NetsuiteAccountAddress).findOneBy({id:addressId,accountId,active:true});
         if(!address)throw new Error('Default ship-to must be an active address on the linked account.');
+    }
+
+    private async markAccountIneligible(ctx:RequestContext,customerId:string,eligibility:ReturnType<typeof accountEligibility>){
+        await this.connection.withTransaction(ctx,async tx=>{
+            const accountRepo=this.connection.getRepository(tx,NetsuiteAccount);
+            const account=await accountRepo.findOneBy({netsuiteInternalId:customerId});
+            if(!account)return;
+            account.active=eligibility.active;
+            account.webCustomer=eligibility.webCustomer;
+            account.eligibilityIssue=eligibility.issue;
+            account.lastSyncedAt=new Date();
+            await accountRepo.save(account);
+        });
     }
 
     private validate(result:NetsuiteCustomerResponse){

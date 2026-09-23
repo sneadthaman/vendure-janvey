@@ -15,6 +15,7 @@ import { netsuiteAddressShippingCalculator, NetsuiteOrderItemPriceStrategy, Nets
 import { NetsuiteApprovalService } from './services/netsuite-approval.service';
 import { netsuiteShopSchema, NetsuiteB2bResolver } from './netsuite-b2b.resolver';
 import { netsuiteApprovalOrderProcess, NetsuiteOrderPlacedStrategy } from './netsuite-order-process';
+import {netsuiteCustomerRefreshTask} from './netsuite-customer-refresh.task';
 
 @VendurePlugin({
     imports: [PluginCommonModule],
@@ -39,6 +40,10 @@ import { netsuiteApprovalOrderProcess, NetsuiteOrderPlacedStrategy } from './net
         config.catalogOptions.productVariantPriceCalculationStrategy=new NetsuiteProductVariantPriceStrategy();
         config.taxOptions.taxLineCalculationStrategy=new NetsuiteTaxLineStrategy();
         config.shippingOptions.shippingCalculators.push(netsuiteAddressShippingCalculator);
+        config.schedulerOptions={
+            ...config.schedulerOptions,
+            tasks:[...(config.schedulerOptions?.tasks??[]),netsuiteCustomerRefreshTask],
+        };
         return config;
     },
     compatibility: '^3.0.0',

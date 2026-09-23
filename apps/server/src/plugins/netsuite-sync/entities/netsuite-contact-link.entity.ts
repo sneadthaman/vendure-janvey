@@ -34,6 +34,12 @@ export class NetsuiteContactLink extends VendureEntity {
     @Column({default:false})
     canApproveOrders:boolean;
 
+    @Column({default:true})
+    active:boolean;
+
+    @Column({type:'varchar',length:512,nullable:true})
+    eligibilityIssue:string|null;
+
     @ManyToOne(()=>NetsuiteAccountAddress,{nullable:true,onDelete:'SET NULL'})
     @JoinColumn({name:'defaultShippingAddressId'})
     defaultShippingAddress:NetsuiteAccountAddress|null;

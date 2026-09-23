@@ -6,6 +6,7 @@ require('ts-node').register({project:require('node:path').resolve(__dirname,'../
 const {assertApprovalAccount,assertCanDecideApproval,assertCanViewApproval}=require('../apps/server/src/plugins/netsuite-sync/b2b-policy');
 const {netsuiteApprovalOrderProcess,withAuthorizedOrderTransition}=require('../apps/server/src/plugins/netsuite-sync/netsuite-order-process');
 const {NetsuiteBillToTaxZoneStrategy,NetsuiteTaxLineStrategy,netsuiteAddressShippingCalculator}=require('../apps/server/src/plugins/netsuite-sync/b2b-strategies');
+const {accountEligibility,contactEligibility,defaultAddressIsStale}=require('../apps/server/src/plugins/netsuite-sync/b2b-lifecycle');
 
 const requester={accountId:10,customerId:100,canApproveOrders:false};
 const approver={accountId:'10',customerId:101,canApproveOrders:true};
@@ -69,4 +70,25 @@ test('tax zone follows the bill-to country rather than the ship-to country',()=>
         billingAddress:{countryCode:'US'},shippingAddress:{countryCode:'CA'},
     });
     assert.equal(zone,us);
+});
+
+test('account eligibility follows NetSuite active and web-customer flags',()=>{
+    assert.deepEqual(accountEligibility({active:true,webCustomer:true}),{active:true,webCustomer:true,eligible:true,issue:null});
+    assert.match(accountEligibility({active:false,webCustomer:true}).issue,/inactive/);
+    assert.match(accountEligibility({active:true,webCustomer:false}).issue,/not marked as a web customer/);
+});
+
+test('contact eligibility suspends removed and inactive NetSuite contacts',()=>{
+    const contacts=[{internalId:'10',active:true},{internalId:'11',active:false}];
+    assert.equal(contactEligibility('10',contacts).eligible,true);
+    assert.match(contactEligibility('11',contacts).issue,/inactive/);
+    assert.match(contactEligibility('12',contacts).issue,/no longer present/);
+    assert.equal(contactEligibility(null,contacts).eligible,true);
+});
+
+test('inactive address reconciliation identifies stale contact defaults',()=>{
+    const activeAddressIds=new Set(['20','21']);
+    assert.equal(defaultAddressIsStale(20,activeAddressIds),false);
+    assert.equal(defaultAddressIsStale(22,activeAddressIds),true);
+    assert.equal(defaultAddressIsStale(null,activeAddressIds),false);
 });

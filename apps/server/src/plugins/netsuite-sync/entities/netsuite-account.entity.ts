@@ -31,6 +31,15 @@ export class NetsuiteAccount extends VendureEntity {
     @Column({default:false})
     taxExempt:boolean;
 
+    @Column({default:true})
+    active:boolean;
+
+    @Column({default:true})
+    webCustomer:boolean;
+
+    @Column({type:'varchar',length:512,nullable:true})
+    eligibilityIssue:string|null;
+
     @Column({type:'varchar',length:255,nullable:true})
     taxItemId:string|null;
 
