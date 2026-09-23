@@ -1,0 +1,10 @@
+{{> header title="Purchasing account invitation"}}
+
+<mj-section><mj-column><mj-text>
+    <p>Hello {{contactName}},</p>
+    <p>You have been invited to access the {{accountName}} purchasing account.</p>
+    <p><a href="{{invitationUrl}}">Accept your invitation</a></p>
+    <p>This single-use invitation expires on {{formatDate expiresAt 'en'}}. Sign in or create an account using the email address that received this message.</p>
+</mj-text></mj-column></mj-section>
+
+{{> footer}}

@@ -5,6 +5,7 @@ import { NetsuiteSyncService } from './services/netsuite-sync.service';
 import { NetsuiteCustomerService } from './services/netsuite-customer.service';
 import {ID} from '@vendure/common/lib/shared-types';
 import {NetsuiteApprovalService} from './services/netsuite-approval.service';
+import {NetsuiteInvitationService} from './services/netsuite-invitation.service';
 
 export const netsuiteAdminSchema=gql`
     type NetsuiteSyncRun implements Node {
@@ -79,6 +80,23 @@ export const netsuiteAdminSchema=gql`
         issues: JSON!
         finishedAt: DateTime
     }
+    type NetsuiteContactInvitation implements Node {
+        id: ID!
+        createdAt: DateTime!
+        updatedAt: DateTime!
+        account: NetsuiteAccount!
+        netsuiteContactId: String!
+        emailAddress: String!
+        firstName: String
+        lastName: String
+        requiresApproval: Boolean!
+        canApproveOrders: Boolean!
+        defaultShippingAddress: NetsuiteAccountAddress
+        expiresAt: DateTime!
+        acceptedAt: DateTime
+        revokedAt: DateTime
+        acceptedByCustomer: Customer
+    }
     type NetsuiteCustomerCandidate {
         internalId: String!
         entityId: String
@@ -126,10 +144,18 @@ export const netsuiteAdminSchema=gql`
         canApproveOrders: Boolean
         defaultShippingAddressId: ID
     }
+    input InviteNetsuiteContactInput {
+        accountId: ID!
+        netsuiteContactId: String!
+        requiresApproval: Boolean
+        canApproveOrders: Boolean
+        defaultShippingAddressId: ID
+    }
     extend type Query {
         netsuiteSyncRuns: [NetsuiteSyncRun!]!
         netsuiteAccounts: [NetsuiteAccount!]!
         netsuiteCustomerSyncRuns: [NetsuiteCustomerSyncRun!]!
+        netsuiteContactInvitations: [NetsuiteContactInvitation!]!
         inspectNetsuiteCustomer(customerId: String!): JSON!
         findNetsuiteCustomers(query: String!): [NetsuiteCustomerCandidate!]!
         netsuiteApprovalOrders(status: String): [AdminNetsuiteOrderApproval!]!
@@ -142,13 +168,14 @@ export const netsuiteAdminSchema=gql`
         linkNetsuiteCustomer(input: LinkNetsuiteCustomerInput!): Boolean!
         updateNetsuiteContactLink(input: UpdateNetsuiteContactLinkInput!): Boolean!
         unlinkNetsuiteCustomer(customerId: ID!): Boolean!
+        inviteNetsuiteContact(input: InviteNetsuiteContactInput!): NetsuiteContactInvitation!
         resolveNetsuiteApprovalOrder(id: ID!, action: String!, comment: String): AdminNetsuiteOrderApproval!
     }
 `;
 
 @Resolver()
 export class NetsuiteSyncResolver {
-    constructor(private sync:NetsuiteSyncService,private customers:NetsuiteCustomerService,private approvals:NetsuiteApprovalService){}
+    constructor(private sync:NetsuiteSyncService,private customers:NetsuiteCustomerService,private approvals:NetsuiteApprovalService,private invitations:NetsuiteInvitationService){}
     @Query()
     @Allow(Permission.SuperAdmin)
     netsuiteSyncRuns(@Ctx() ctx:RequestContext){return this.sync.list(ctx);}
@@ -164,6 +191,9 @@ export class NetsuiteSyncResolver {
     @Query()
     @Allow(Permission.SuperAdmin)
     netsuiteCustomerSyncRuns(@Ctx() ctx:RequestContext){return this.customers.listRuns(ctx);}
+    @Query()
+    @Allow(Permission.SuperAdmin)
+    netsuiteContactInvitations(@Ctx() ctx:RequestContext){return this.invitations.list(ctx);}
     @Query()
     @Allow(Permission.SuperAdmin)
     inspectNetsuiteCustomer(@Args('customerId') customerId:string){return this.customers.inspect(customerId);}
@@ -182,6 +212,9 @@ export class NetsuiteSyncResolver {
     @Mutation()
     @Allow(Permission.SuperAdmin)
     unlinkNetsuiteCustomer(@Ctx() ctx:RequestContext,@Args('customerId') customerId:ID){return this.customers.unlinkCustomer(ctx,customerId);}
+    @Mutation()
+    @Allow(Permission.SuperAdmin)
+    inviteNetsuiteContact(@Ctx() ctx:RequestContext,@Args('input') input:{accountId:ID;netsuiteContactId:string;requiresApproval?:boolean;canApproveOrders?:boolean;defaultShippingAddressId?:ID}){return this.invitations.invite(ctx,input);}
     @Query()
     @Allow(Permission.SuperAdmin)
     netsuiteApprovalOrders(@Ctx() ctx:RequestContext,@Args('status') status?:string){return this.approvals.listForStaff(ctx,status);}

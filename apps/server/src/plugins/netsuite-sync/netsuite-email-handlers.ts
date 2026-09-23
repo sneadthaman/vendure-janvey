@@ -1,6 +1,7 @@
 import {EmailEventListener} from '@vendure/email-plugin';
 
 import {NetsuiteApprovalDecisionEvent,NetsuiteApprovalRequestedEvent} from './netsuite-approval.events';
+import {NetsuiteContactInvitationEvent} from './netsuite-invitation.event';
 
 const approvalRequestedHandler=new EmailEventListener('netsuite-approval-requested')
     .on(NetsuiteApprovalRequestedEvent)
@@ -27,4 +28,14 @@ const approvalDecisionHandler=new EmailEventListener('netsuite-approval-decision
         orderUrl:`${process.env.STOREFRONT_URL??'http://localhost:3001'}/account/orders/${event.order.code}`,
     }));
 
-export const netsuiteEmailHandlers=[approvalRequestedHandler,approvalDecisionHandler];
+const contactInvitationHandler=new EmailEventListener('netsuite-contact-invitation')
+    .on(NetsuiteContactInvitationEvent)
+    .setRecipient(event=>event.recipient)
+    .setFrom('{{ fromAddress }}')
+    .setSubject('Your {{ accountName }} purchasing account invitation')
+    .setTemplateVars(event=>({
+        contactName:event.contactName,accountName:event.accountName,expiresAt:event.expiresAt,
+        invitationUrl:`${process.env.STOREFRONT_URL??'http://localhost:3001'}/account-invitation?token=${encodeURIComponent(event.token)}`,
+    }));
+
+export const netsuiteEmailHandlers=[approvalRequestedHandler,approvalDecisionHandler,contactInvitationHandler];

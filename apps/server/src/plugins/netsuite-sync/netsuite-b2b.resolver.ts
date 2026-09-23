@@ -5,6 +5,7 @@ import gql from 'graphql-tag';
 
 import {PendingOrderChanges,NetsuiteApprovalService} from './services/netsuite-approval.service';
 import {NetsuitePricingService} from './services/netsuite-pricing.service';
+import {NetsuiteInvitationService} from './services/netsuite-invitation.service';
 
 export const netsuiteShopSchema=gql`
     type ActiveNetsuitePrice {
@@ -37,6 +38,15 @@ export const netsuiteShopSchema=gql`
         canApproveOrders: Boolean!
         defaultShippingAddressId: ID
         addresses: [ShopNetsuiteAddress!]!
+    }
+    type NetsuiteInvitationPreview {
+        accountName: String!
+        emailHint: String!
+        expiresAt: DateTime!
+        available: Boolean!
+    }
+    type NetsuiteInvitationAcceptance {
+        accountName: String!
     }
     type NetsuiteApprovalEvent implements Node {
         id: ID!
@@ -84,6 +94,7 @@ export const netsuiteShopSchema=gql`
         myNetsuiteApprovalOrders: [ShopNetsuiteOrderApproval!]!
         pendingNetsuiteApprovalOrders: [ShopNetsuiteOrderApproval!]!
         netsuiteApprovalOrder(id: ID!): ShopNetsuiteOrderApproval!
+        netsuiteInvitation(token: String!): NetsuiteInvitationPreview!
     }
     extend type Mutation {
         selectNetsuiteShipTo(addressId: ID!): ActiveNetsuiteAccount!
@@ -92,12 +103,17 @@ export const netsuiteShopSchema=gql`
         approveNetsuiteOrder(id: ID!, comment: String): ShopNetsuiteOrderApproval!
         rejectNetsuiteOrder(id: ID!, comment: String): ShopNetsuiteOrderApproval!
         cancelNetsuiteApprovalOrder(id: ID!, comment: String): ShopNetsuiteOrderApproval!
+        acceptNetsuiteInvitation(token: String!): NetsuiteInvitationAcceptance!
     }
 `;
 
 @Resolver()
 export class NetsuiteB2bResolver {
-    constructor(private approvals:NetsuiteApprovalService,private pricing:NetsuitePricingService){}
+    constructor(private approvals:NetsuiteApprovalService,private pricing:NetsuitePricingService,private invitations:NetsuiteInvitationService){}
+
+    @Query()
+    @Allow(Permission.Public)
+    netsuiteInvitation(@Ctx() ctx:RequestContext,@Args('token') token:string){return this.invitations.preview(ctx,token);}
 
     @Query()
     @Allow(Permission.Authenticated)
@@ -142,4 +158,8 @@ export class NetsuiteB2bResolver {
     @Mutation()
     @Allow(Permission.Authenticated)
     cancelNetsuiteApprovalOrder(@Ctx() ctx:RequestContext,@Args('id') id:ID,@Args('comment') comment?:string){return this.approvals.cancel(ctx,id,comment);}
+
+    @Mutation()
+    @Allow(Permission.Authenticated)
+    acceptNetsuiteInvitation(@Ctx() ctx:RequestContext,@Args('token') token:string){return this.invitations.accept(ctx,token);}
 }

@@ -22,6 +22,18 @@ export const ActiveNetsuitePricesQuery=graphql(`
     }
 `);
 
+export const NetsuiteInvitationQuery=graphql(`
+    query NetsuiteInvitation($token: String!) {
+        netsuiteInvitation(token: $token) { accountName emailHint expiresAt available }
+    }
+`);
+
+export const AcceptNetsuiteInvitationMutation=graphql(`
+    mutation AcceptNetsuiteInvitation($token: String!) {
+        acceptNetsuiteInvitation(token: $token) { accountName }
+    }
+`);
+
 export const ApprovalFields=graphql(`
     fragment ApprovalFields on ShopNetsuiteOrderApproval {
         id createdAt updatedAt status pricingVerifiedAt taxValidatedAt decidedAt decisionComment

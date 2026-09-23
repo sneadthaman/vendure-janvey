@@ -13,6 +13,7 @@ declare global {
             SUPERADMIN_PASSWORD: string;
             CORS_ORIGINS?: string;
             NETSUITE_CUSTOMER_REFRESH_CRON?: string;
+            NETSUITE_INVITATION_TTL_HOURS?: string;
             DB_HOST: string;
             DB_PORT: number;
             DB_NAME: string;

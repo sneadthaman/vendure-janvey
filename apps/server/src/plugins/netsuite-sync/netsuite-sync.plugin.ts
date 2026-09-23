@@ -9,13 +9,14 @@ import { NetsuiteSyncRun } from './netsuite-sync-run.entity';
 import { netsuiteAdminSchema, NetsuiteSyncResolver } from './netsuite-sync.resolver';
 import { NetsuiteCollectionService } from './services/netsuite-collection.service';
 import { NetsuiteCustomerService } from './services/netsuite-customer.service';
-import { NetsuiteAccount, NetsuiteAccountAddress, NetsuiteContactLink, NetsuiteCustomerSyncRun, NetsuiteOrderApproval, NetsuiteOrderApprovalEvent } from './entities';
+import { NetsuiteAccount, NetsuiteAccountAddress, NetsuiteContactInvitation, NetsuiteContactLink, NetsuiteCustomerSyncRun, NetsuiteOrderApproval, NetsuiteOrderApprovalEvent } from './entities';
 import { NetsuitePricingService } from './services/netsuite-pricing.service';
 import { netsuiteAddressShippingCalculator, NetsuiteOrderItemPriceStrategy, NetsuiteProductVariantPriceStrategy, NetsuiteTaxLineStrategy } from './b2b-strategies';
 import { NetsuiteApprovalService } from './services/netsuite-approval.service';
 import { netsuiteShopSchema, NetsuiteB2bResolver } from './netsuite-b2b.resolver';
 import { netsuiteApprovalOrderProcess, NetsuiteOrderPlacedStrategy } from './netsuite-order-process';
 import {netsuiteCustomerRefreshTask} from './netsuite-customer-refresh.task';
+import {NetsuiteInvitationService} from './services/netsuite-invitation.service';
 
 @VendurePlugin({
     imports: [PluginCommonModule],
@@ -28,8 +29,9 @@ import {netsuiteCustomerRefreshTask} from './netsuite-customer-refresh.task';
         NetsuiteCustomerService,
         NetsuitePricingService,
         NetsuiteApprovalService,
+        NetsuiteInvitationService,
     ],
-    entities: [NetsuiteSyncRun,NetsuiteAccount,NetsuiteAccountAddress,NetsuiteContactLink,NetsuiteCustomerSyncRun,NetsuiteOrderApproval,NetsuiteOrderApprovalEvent],
+    entities: [NetsuiteSyncRun,NetsuiteAccount,NetsuiteAccountAddress,NetsuiteContactLink,NetsuiteContactInvitation,NetsuiteCustomerSyncRun,NetsuiteOrderApproval,NetsuiteOrderApprovalEvent],
     dashboard: './dashboard/index.tsx',
     adminApiExtensions: {schema:netsuiteAdminSchema,resolvers:[NetsuiteSyncResolver]},
     shopApiExtensions: {schema:netsuiteShopSchema,resolvers:[NetsuiteB2bResolver]},
