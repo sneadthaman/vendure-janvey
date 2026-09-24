@@ -1,10 +1,16 @@
 {{> header title="Purchasing account invitation"}}
 
-<mj-section><mj-column><mj-text>
-    <p>Hello {{contactName}},</p>
-    <p>You have been invited to access the {{accountName}} purchasing account.</p>
-    <p><a href="{{invitationUrl}}">Accept your invitation</a></p>
-    <p>This single-use invitation expires on {{formatDate expiresAt 'en'}}. Sign in or create an account using the email address that received this message.</p>
-</mj-text></mj-column></mj-section>
+<mj-section><mj-column>
+    <mj-text>
+        <p>Hello {{contactName}},</p>
+        <p>You have been invited to access the {{accountName}} purchasing account.</p>
+    </mj-text>
+    <mj-button background-color="#375a67" color="#ffffff" href="{{{invitationUrl}}}">Accept your invitation</mj-button>
+    <mj-text>
+        <p>This single-use invitation expires on {{formatDate expiresAt 'en'}}. Sign in or create an account using the email address that received this message.</p>
+        <p>If the button does not work, copy and paste this address into your browser:</p>
+        <p style="word-break: break-all;">{{invitationUrl}}</p>
+    </mj-text>
+</mj-column></mj-section>
 
 {{> footer}}

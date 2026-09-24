@@ -1,10 +1,10 @@
 # Codex handoff
 
-Updated: 2026-09-23
+Updated: 2026-09-24
 
 ## Resume point
 
-The NetSuite catalog and B2B customer foundation are implemented. The latest completed phase is secure invitation-based onboarding for NetSuite contacts. The working tree was clean at commit `82e8f2e` (`feat: add NetSuite contact invitations`), and `main` was pushed to `git@github.com:sneadthaman/vendure-janvey.git`.
+The NetSuite catalog and B2B customer foundation are implemented. The latest committed phase is secure invitation-based onboarding for NetSuite contacts. The current Git baseline is `e6685b7` (`docs: add Codex project handoff`) on `main` and `origin/main`. The workspace now contains reviewed but uncommitted production SMTP configuration and Dashboard invitation-selector improvements.
 
 Read `NETSUITE-IMPLEMENTATION-REPORT.md` for detailed implementation history and live fixture evidence. Treat this file as the short operational handoff.
 
@@ -85,14 +85,15 @@ The previously attempted `scripts/netsuite-pricing-restlet.test.cjs` command is 
 
 ## Next work
 
-The invitation implementation works locally, but production email delivery still needs a real SMTP/email transport configuration. The current EmailPlugin development mode writes messages to the local development mailbox.
+The backend now supports Microsoft 365 delivery through Microsoft Graph while retaining the local file mailbox through `EMAIL_TRANSPORT=file`. The Entra application and untracked local credentials are configured, and the first external message from and to `sjanvey@janvey.com` was accepted at `17:32:41Z` and delivered on 2026-09-24. Configure production mailbox scoping with Exchange Application RBAC before release; do not commit credential values.
 
-Before choosing another phase, confirm the user's priority. Likely choices are:
+The Microsoft 365 delivery configuration, Dashboard selector implementation, and invitation-based customer onboarding are complete locally. Remaining work is:
 
-1. Configure and verify production invitation email delivery.
-2. Improve the staff invitation UI so contacts can be selected from imported/live contact data instead of manually entering a NetSuite contact ID.
-3. Finish a deployment/release checklist for the customer integration.
-4. Begin the next commerce phase, such as inventory synchronization or sending approved orders to NetSuite. Any NetSuite write path needs a separate, explicit design and staged validation because all current RESTlets are read-only.
+1. Verify the contact and ship-to selector interaction manually in the Dashboard when the current dev server has reloaded the new Dashboard bundle.
+2. Finish a deployment/release checklist for the customer integration, including Exchange Application RBAC for the production sender mailbox.
+3. Begin the next commerce phase, such as inventory synchronization or sending approved orders to NetSuite. Any NetSuite write path needs a separate, explicit design and staged validation because all current RESTlets are read-only.
+
+Corrected invitation `4` completed the live onboarding proof on 2026-09-24. It targeted active NetSuite contact `5847` on customer `712`; invitation job `2094` and verification job `2095` each completed on their first attempt. Registration, verification, sign-in, and acceptance succeeded. Vendure customer `71` is actively linked to account `712` with no eligibility issue and the intended false approval flags. Invitation `3` contained scaffold placeholders and malformed quoted-printable content and was revoked before this successful run.
 
 ## New-chat startup checklist
 

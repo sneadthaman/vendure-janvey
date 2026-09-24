@@ -5,7 +5,13 @@ import {
     DefaultSearchPlugin,
     VendureConfig,
 } from '@vendure/core';
-import { defaultEmailHandlers, EmailPlugin, FileBasedTemplateLoader } from '@vendure/email-plugin';
+import {
+    defaultEmailHandlers,
+    EmailPlugin,
+    FileBasedTemplateLoader,
+    type EmailPluginDevModeOptions,
+    type EmailPluginOptions,
+} from '@vendure/email-plugin';
 import { netsuiteEmailHandlers } from './plugins/netsuite-sync/netsuite-email-handlers';
 import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import { DashboardPlugin } from '@vendure/dashboard/plugin';
@@ -13,6 +19,7 @@ import { GraphiqlPlugin } from '@vendure/graphiql-plugin';
 import 'dotenv/config';
 import { existsSync } from 'node:fs';
 import path from 'path';
+import {MicrosoftGraphEmailSender} from './email/microsoft-graph-email-sender';
 import { NetsuiteSyncPlugin } from './plugins/netsuite-sync/netsuite-sync.plugin';
 import { NetsuiteBillToTaxZoneStrategy } from './plugins/netsuite-sync/b2b-strategies';
 import { customFields } from './custom-fields';
@@ -26,6 +33,44 @@ const configuredLocalImages = process.env.NETSUITE_IMAGE_DIRECTORY;
 const localImagesPath = configuredLocalImages
     ? path.resolve(repositoryRoot, configuredLocalImages)
     : path.join(repositoryRoot, '.local/netsuite-images/extracted');
+const storefrontUrl = (IS_DEV
+    ? process.env.STOREFRONT_URL?.trim() || 'http://localhost:3001'
+    : requiredProductionEnv('STOREFRONT_URL')).replace(/\/$/, '');
+const emailTransport=process.env.EMAIL_TRANSPORT?.trim().toLowerCase()||(IS_DEV?'file':'microsoft-graph');
+if(emailTransport!=='file'&&emailTransport!=='microsoft-graph'){
+    throw new Error('EMAIL_TRANSPORT must be file or microsoft-graph.');
+}
+
+const emailCommonOptions = {
+    handlers: [...defaultEmailHandlers, ...netsuiteEmailHandlers],
+    templateLoader: new FileBasedTemplateLoader(path.join(__dirname, '../static/email/templates')),
+    globalTemplateVars: {
+        fromAddress: emailTransport==='file'
+            ? process.env.EMAIL_FROM_ADDRESS?.trim() || '"Janvey" <noreply@example.com>'
+            : requiredEmailEnv('EMAIL_FROM_ADDRESS'),
+        verifyEmailAddressUrl: `${storefrontUrl}/verify`,
+        passwordResetUrl: `${storefrontUrl}/reset-password`,
+        changeEmailAddressUrl: `${storefrontUrl}/account/verify-email`,
+    },
+};
+
+const emailOptions: EmailPluginOptions | EmailPluginDevModeOptions = emailTransport==='file'
+    ? {
+        ...emailCommonOptions,
+        devMode: true,
+        outputPath: path.join(__dirname, '../static/email/test-emails'),
+        route: 'mailbox',
+    }
+    : {
+        ...emailCommonOptions,
+        transport: {type:'none'},
+        emailSender:new MicrosoftGraphEmailSender({
+            tenantId:requiredEmailEnv('M365_TENANT_ID'),
+            clientId:requiredEmailEnv('M365_CLIENT_ID'),
+            clientSecret:requiredEmailEnv('M365_CLIENT_SECRET'),
+            senderMailbox:requiredEmailEnv('M365_SENDER_MAILBOX'),
+        }),
+    };
 
 export const config: VendureConfig = {
     apiOptions: {
@@ -97,21 +142,7 @@ export const config: VendureConfig = {
         DefaultSchedulerPlugin.init(),
         DefaultJobQueuePlugin.init({ useDatabaseForBuffer: true }),
         DefaultSearchPlugin.init({ bufferUpdates: false, indexStockStatus: true }),
-        EmailPlugin.init({
-            devMode: true,
-            outputPath: path.join(__dirname, '../static/email/test-emails'),
-            route: 'mailbox',
-            handlers: [...defaultEmailHandlers, ...netsuiteEmailHandlers],
-            templateLoader: new FileBasedTemplateLoader(path.join(__dirname, '../static/email/templates')),
-            globalTemplateVars: {
-                // The following variables will change depending on your storefront implementation.
-                // Here we are assuming a storefront running at http://localhost:8080.
-                fromAddress: '"example" <noreply@example.com>',
-                verifyEmailAddressUrl: 'http://localhost:8080/verify',
-                passwordResetUrl: 'http://localhost:8080/password-reset',
-                changeEmailAddressUrl: 'http://localhost:8080/verify-email-address-change'
-            },
-        }),
+        EmailPlugin.init(emailOptions),
         DashboardPlugin.init({
             route: 'dashboard',
             appDir: IS_DEV
@@ -136,3 +167,17 @@ export const config: VendureConfig = {
         }),
     ],
 };
+
+function requiredProductionEnv(name: keyof NodeJS.ProcessEnv): string {
+    const value = process.env[name]?.trim();
+    if (!value) {
+        throw new Error(`${name} is required when APP_ENV is not dev.`);
+    }
+    return value;
+}
+
+function requiredEmailEnv(name:keyof NodeJS.ProcessEnv):string{
+    const value=process.env[name]?.trim();
+    if(!value)throw new Error(`${name} is required when EMAIL_TRANSPORT=microsoft-graph.`);
+    return value;
+}

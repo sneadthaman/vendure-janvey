@@ -21,6 +21,7 @@ const client=new NetsuiteService({
     const output={customerId,sku,internalId:price.internalId,price:price.price,basePrice:price.basePrice,source:price.source,purchasable:price.purchasable};
     if(process.env.NETSUITE_CUSTOMERS_RESTLET_URL){
         const verbose=process.argv.includes('--verbose');
+        const includeContacts=process.argv.includes('--contacts');
         const customer=await client.fetchCustomer(customerId,{diagnostic:verbose});
         const taxFields=['taxable','taxitem','resalenumber','vatregnumber'];
         const taxMetadata=Object.fromEntries(taxFields.flatMap(field=>{
@@ -29,6 +30,15 @@ const client=new NetsuiteService({
         }));
         output.customerContract={contractVersion:customer.contractVersion,addressCount:customer.addresses.length,contactCount:customer.contacts.length,issues:customer.issues,...(verbose?{diagnostics:customer.diagnostics}:{})};
         output.customerTax={taxMetadata};
+        if(includeContacts){
+            output.eligibleContacts=customer.contacts
+                .filter(contact=>contact.active&&contact.emailAddress)
+                .map(contact=>({
+                    internalId:contact.internalId,
+                    name:[contact.firstName,contact.lastName].filter(Boolean).join(' ')||contact.entityId,
+                    emailAddress:contact.emailAddress,
+                }));
+        }
     }
     console.log(JSON.stringify(output,null,2));
 })().catch(error=>{console.error(error.message);process.exitCode=1;});
