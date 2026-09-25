@@ -79,6 +79,7 @@ The previously attempted `scripts/netsuite-pricing-restlet.test.cjs` command is 
 
 - Docker/PostgreSQL must be running. Local PostgreSQL is configured through `apps/server/.env` and has previously used port `6543`.
 - Do not start or kill duplicate development processes. Check existing ports/processes first because the user commonly leaves `npm run dev` running.
+- The root `npm run dev` command waits for Vendure's `/health` endpoint before starting Next.js. This prevents the storefront from flooding the console with transient `ECONNREFUSED` render errors while the Dashboard bundle is compiling.
 - Backend-only commands are `npm run dev:server -w server` and `npm run dev:worker -w server`.
 - Storefront normally runs at `http://localhost:3001`.
 - Never copy environment secrets into documentation, logs, commits, or chat.
