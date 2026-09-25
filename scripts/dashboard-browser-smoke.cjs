@@ -79,9 +79,25 @@ async function main(){
         const state=await send('Runtime.evaluate',{expression:`({url:location.href,text:document.body.innerText})`,returnByValue:true});
         const value=state.result.value;
         if(!value.text.includes('NetSuite catalog sync')||!value.text.includes('Run 9')||!value.text.includes('Refresh category memberships')||!value.text.includes('collections Refreshed')) throw new Error(`Sync dashboard did not render the latest category controls at ${value.url}.`);
+        await send('Page.navigate',{url:'http://localhost:3000/dashboard/netsuite-customers'});
+        await delay(3000);
+        const searchState=await send('Runtime.evaluate',{expression:`(async()=>{
+            const delay=milliseconds=>new Promise(resolve=>setTimeout(resolve,milliseconds));
+            const input=document.querySelector('input[placeholder="Vendure login name or email"]');
+            const button=[...document.querySelectorAll('button')].find(item=>item.textContent.includes('Find Vendure logins'));
+            if(!input||!button)return {ok:false,reason:'contact search controls missing'};
+            const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;
+            async function search(value){setter.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));await delay(50);button.click();for(let attempt=0;attempt<40;attempt++){await delay(250);const status=[...document.querySelectorAll('[aria-live="polite"]')].map(item=>item.textContent).find(text=>text);if(status)return status;}return '';}
+            const linked=await search('sjanvey@janvey.com');
+            setter.call(input,'not-registered@example.invalid');input.dispatchEvent(new Event('input',{bubbles:true}));await delay(50);button.click();
+            let missing='';for(let attempt=0;attempt<40;attempt++){await delay(250);missing=[...document.querySelectorAll('[aria-live="polite"]')].map(item=>item.textContent).find(text=>text?.includes('not-registered@example.invalid'))||'';if(missing)break;}
+            return {ok:true,linked,missing};
+        })()`,awaitPromise:true,returnByValue:true});
+        const contactSearch=searchState.result.value;
+        if(!contactSearch?.ok||!contactSearch.linked.includes('already linked to PROF MAINTENANCE OF LI')||!contactSearch.missing.includes('No Vendure login found')) throw new Error(`Customer search feedback failed: ${JSON.stringify(contactSearch)}`);
         const capture=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
         fs.writeFileSync(screenshot,Buffer.from(capture.data,'base64'));
-        console.log(JSON.stringify({url:value.url,heading:true,run9:true,categoryRefresh:true,screenshot:path.relative(process.cwd(),screenshot)}));
+        console.log(JSON.stringify({url:value.url,heading:true,run9:true,categoryRefresh:true,contactSearch,screenshot:path.relative(process.cwd(),screenshot)}));
     } finally {
         try {await send('Browser.close');} catch {}
         socket.close();
