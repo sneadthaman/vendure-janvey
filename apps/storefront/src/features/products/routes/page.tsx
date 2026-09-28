@@ -6,12 +6,7 @@ import { ProductImageCarousel } from '@/features/products/components/product-ima
 import { ProductInfo } from '@/features/products/components/product-info';
 import {getDisplayOptionGroups} from '@/features/products/product-options';
 import { RelatedProducts } from '@/features/products/components/related-products';
-import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
-} from '@/components/ui/accordion';
+import {ProductDetailTabs} from '@/features/products/components/product-detail-tabs';
 import {
     Breadcrumb,
     BreadcrumbList,
@@ -22,7 +17,7 @@ import {
 } from '@/components/ui/breadcrumb';
 import { notFound } from 'next/navigation';
 import { cacheLife, cacheTag } from 'next/cache';
-import { Truck, RotateCcw, ShieldCheck, Clock } from 'lucide-react';
+import {BadgeDollarSign, Building2, Headset} from 'lucide-react';
 import { routing } from '@/platform/i18n/routing';
 import {
     SITE_NAME,
@@ -35,7 +30,18 @@ import {toOgLocale} from '@/platform/i18n/locale-utils';
 import {getActiveCurrencyCode} from '@/features/currency/currency-server';
 import {getRouteLocale} from '@/platform/i18n/server';
 
-async function getProductData(slug: string, currencyCode: string) {
+function externalResource(value: unknown): {url?: string; reference?: string} {
+    if (typeof value !== 'string' || !value.trim()) return {};
+    try {
+        const url = new URL(value);
+        return url.protocol === 'https:' || url.protocol === 'http:' ? {url: url.toString()} : {};
+    } catch {
+        const reference = value.trim();
+        return /^[a-z0-9_.() -]{1,200}$/i.test(reference) ? {reference} : {};
+    }
+}
+
+async function getProductMetadataData(slug: string, currencyCode: string) {
     'use cache';
     cacheLife('hours');
 
@@ -43,7 +49,13 @@ async function getProductData(slug: string, currencyCode: string) {
     cacheTag(`product-${slug}-${locale}-${currencyCode}`);
     cacheTag('products');
 
-    return await query(GetProductDetailQuery, {slug}, {languageCode: locale, currencyCode,useAuthToken:true});
+    return await query(GetProductDetailQuery, {slug}, {languageCode: locale, currencyCode});
+}
+
+async function getProductData(slug: string, currencyCode: string, locale: string) {
+    // Customer pricing is request-specific. Never place this authenticated
+    // query inside a public cache scope.
+    return query(GetProductDetailQuery, {slug}, {languageCode: locale, currencyCode, useAuthToken: true});
 }
 
 export async function generateMetadata({
@@ -52,7 +64,7 @@ export async function generateMetadata({
     const { slug } = await params;
     const locale = await getRouteLocale();
     const currencyCode = await getActiveCurrencyCode();
-    const result = await getProductData(slug, currencyCode);
+    const result = await getProductMetadataData(slug, currencyCode);
     const product = result.data.product;
 
     const t = await getTranslations({locale, namespace: 'Product'});
@@ -105,7 +117,7 @@ export default async function ProductDetailPage({
     const currencyCode = await getActiveCurrencyCode();
     const t = await getTranslations({locale, namespace: 'Product'});
 
-    const result = await getProductData(slug, currencyCode);
+    const result = await getProductData(slug, currencyCode, locale);
 
     const product = result.data.product;
 
@@ -119,10 +131,32 @@ export default async function ProductDetailPage({
     // Hide options that belong to a shared option group but have no variant on
     // this product (Vendure 3.6 shared/global option groups).
     const productForDisplay = {...product, optionGroups: getDisplayOptionGroups(product)};
+    const variant = product.variants[0];
+    const variantFields = variant?.customFields;
+    const productFields = product.customFields;
+    const sds = externalResource(productFields?.sdsUrl);
+    const literature = externalResource(productFields?.literatureUrl);
+    const video = externalResource(productFields?.videoUrl);
+    const manufacturer = product.facetValues.find(value => value.facet.code === 'netsuite-manufacturer')?.name;
+    const dimensions = variantFields?.packLength != null && variantFields.packWidth != null && variantFields.packHeight != null
+        ? `${variantFields.packLength} × ${variantFields.packWidth} × ${variantFields.packHeight} ${t('specLabels.inches')}`
+        : undefined;
+    const specifications = [
+        manufacturer && {label: t('specLabels.manufacturer'), value: manufacturer},
+        variant?.sku && {label: t('specLabels.sku'), value: variant.sku},
+        variantFields?.mpn && {label: t('specLabels.mpn'), value: variantFields.mpn},
+        variantFields?.upc && {label: t('specLabels.upc'), value: variantFields.upc},
+        variantFields?.packSize && {label: t('specLabels.packSize'), value: variantFields.packSize},
+        variantFields?.weight != null && {label: t('specLabels.weight'), value: `${variantFields.weight} ${t('specLabels.pounds')}`},
+        dimensions && {label: t('specLabels.dimensions'), value: dimensions},
+        variantFields?.palletQuantity != null && {label: t('specLabels.palletQuantity'), value: String(variantFields.palletQuantity)},
+        variantFields?.countryOfManufacture && {label: t('specLabels.countryOfManufacture'), value: variantFields.countryOfManufacture},
+    ].filter((item): item is {label: string; value: string} => Boolean(item));
 
     return (
         <>
-            <div className="container mx-auto px-4 py-8 mt-16">
+            <div className="mt-20 bg-[#f7f8fa]">
+                <div className="container mx-auto px-4 py-8 md:py-10">
                 {/* Breadcrumb Navigation */}
                 <Breadcrumb className="mb-6">
                     <BreadcrumbList>
@@ -146,7 +180,7 @@ export default async function ProductDetailPage({
                     </BreadcrumbList>
                 </Breadcrumb>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+                <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.82fr)] lg:gap-12">
                     {/* Left Column: Image Carousel */}
                     <div className="lg:sticky lg:top-20 lg:self-start">
                         <ProductImageCarousel images={product.assets} />
@@ -154,67 +188,31 @@ export default async function ProductDetailPage({
 
                     {/* Right Column: Product Info */}
                     <div>
-                        <ProductInfo product={productForDisplay} searchParams={searchParamsResolved} currencyCode={currencyCode} />
+                        <ProductInfo product={productForDisplay} searchParams={searchParamsResolved} currencyCode={currencyCode} manufacturer={manufacturer} summary={productFields?.storeDescription || productFields?.salesDescription} />
                     </div>
+                </div>
                 </div>
             </div>
 
-            {/* Shipping & Trust Badges */}
-            <section className="py-8 mt-8 border-y border-border/50">
+            <section className="border-t bg-[#0d3158] py-6 text-white">
                 <div className="container mx-auto px-4">
-                    <div className="flex flex-wrap items-center justify-center gap-4 md:gap-8">
-                        <div className="inline-flex items-center gap-2 rounded-full bg-muted/60 px-4 py-2 text-sm font-medium text-muted-foreground">
-                            <Truck className="h-4 w-4 text-primary" />
-                            {t('trustBadges.fastShipping')}
-                        </div>
-                        <div className="inline-flex items-center gap-2 rounded-full bg-muted/60 px-4 py-2 text-sm font-medium text-muted-foreground">
-                            <RotateCcw className="h-4 w-4 text-primary" />
-                            {t('trustBadges.freeReturns')}
-                        </div>
-                        <div className="inline-flex items-center gap-2 rounded-full bg-muted/60 px-4 py-2 text-sm font-medium text-muted-foreground">
-                            <ShieldCheck className="h-4 w-4 text-primary" />
-                            {t('trustBadges.secureCheckout')}
-                        </div>
-                        <div className="inline-flex items-center gap-2 rounded-full bg-muted/60 px-4 py-2 text-sm font-medium text-muted-foreground">
-                            <Clock className="h-4 w-4 text-primary" />
-                            {t('trustBadges.guarantee')}
-                        </div>
+                    <div className="grid gap-5 md:grid-cols-3 md:gap-8">
+                        <div className="flex items-center gap-3"><BadgeDollarSign className="size-6 shrink-0 text-orange-300"/><span><strong className="block text-sm">{t('service.accountPricing.title')}</strong><span className="text-sm text-blue-100">{t('service.accountPricing.description')}</span></span></div>
+                        <div className="flex items-center gap-3"><Building2 className="size-6 shrink-0 text-orange-300"/><span><strong className="block text-sm">{t('service.businessPurchasing.title')}</strong><span className="text-sm text-blue-100">{t('service.businessPurchasing.description')}</span></span></div>
+                        <div className="flex items-center gap-3"><Headset className="size-6 shrink-0 text-orange-300"/><span><strong className="block text-sm">{t('service.support.title')}</strong><span className="text-sm text-blue-100">{t('service.support.description')}</span></span></div>
                     </div>
                 </div>
             </section>
 
-            {/* Store FAQ Section */}
-            <section className="py-16 bg-muted/30">
-                <div className="container mx-auto px-4 max-w-2xl">
-                    <h2 className="text-2xl font-bold text-center mb-8">{t('faq.title')}</h2>
-                    <Accordion className="w-full">
-                        <AccordionItem value="shipping">
-                            <AccordionTrigger>{t('faq.shipping.question')}</AccordionTrigger>
-                            <AccordionContent>
-                                {t('faq.shipping.answer')}
-                            </AccordionContent>
-                        </AccordionItem>
-                        <AccordionItem value="returns">
-                            <AccordionTrigger>{t('faq.returns.question')}</AccordionTrigger>
-                            <AccordionContent>
-                                {t('faq.returns.answer')}
-                            </AccordionContent>
-                        </AccordionItem>
-                        <AccordionItem value="tracking">
-                            <AccordionTrigger>{t('faq.tracking.question')}</AccordionTrigger>
-                            <AccordionContent>
-                                {t('faq.tracking.answer')}
-                            </AccordionContent>
-                        </AccordionItem>
-                        <AccordionItem value="international">
-                            <AccordionTrigger>{t('faq.international.question')}</AccordionTrigger>
-                            <AccordionContent>
-                                {t('faq.international.answer')}
-                            </AccordionContent>
-                        </AccordionItem>
-                    </Accordion>
-                </div>
-            </section>
+            <ProductDetailTabs
+                description={product.description}
+                storeDescription={productFields?.storeDescription}
+                specifications={specifications}
+                sdsUrl={sds.url}
+                sdsReference={sds.reference}
+                literatureUrl={literature.url}
+                videoUrl={video.url}
+            />
 
             {primaryCollection && (
                 <RelatedProducts

@@ -11,6 +11,9 @@
     "errorTitle": "Fehler",
     "errorAddToCart": "Artikel konnte nicht zum Warenkorb hinzugefügt werden",
     "sku": "Art.-Nr.: {sku}",
+    "quantity": "Menge",
+    "decreaseQuantity": "Menge verringern",
+    "increaseQuantity": "Menge erhöhen",
     "from": "Ab",
     "noImage": "Kein Bild",
     "featuredProducts": "Empfohlene Produkte",
@@ -21,6 +24,56 @@
     "noProductsFound": "Keine Produkte gefunden",
     "shopProductAt": "{name} bei {siteName} kaufen",
     "productCount": "{count, plural, one {# Produkt} other {# Produkte}}",
+    "service": {
+      "accountPricing": {
+        "title": "Ihre Firmenpreise",
+        "description": "Melden Sie sich an, um die Preise Ihrer Organisation zu sehen."
+      },
+      "businessPurchasing": {
+        "title": "Für den Geschäftseinkauf",
+        "description": "Nutzen Sie genehmigte Lieferadressen und Einkaufskontrollen."
+      },
+      "support": {
+        "title": "Janvey Produktberatung",
+        "description": "Wir helfen Ihnen bei der Auswahl des richtigen Produkts."
+      }
+    },
+    "specLabels": {
+      "manufacturer": "Hersteller",
+      "sku": "Janvey Artikelnummer",
+      "mpn": "Hersteller-Artikelnummer",
+      "upc": "UPC",
+      "packSize": "Packungsgröße",
+      "weight": "Gewicht",
+      "dimensions": "Packmaße (L × B × H)",
+      "palletQuantity": "Palettenmenge",
+      "countryOfManufacture": "Herstellungsland",
+      "pounds": "lb",
+      "inches": "in"
+    },
+    "tabs": {
+      "details": "Details",
+      "specs": "Spezifikationen",
+      "regulatory": "Regulatorische Dokumente",
+      "additional": "Weitere Informationen",
+      "detailsHeading": "Produktdetails",
+      "noDetails": "Detaillierte Produktinformationen sind noch nicht verfügbar.",
+      "specsHeading": "Produktspezifikationen",
+      "noSpecs": "Produktspezifikationen sind noch nicht verfügbar.",
+      "regulatoryHeading": "Regulatorische Dokumente",
+      "regulatoryDescription": "Hier finden Sie Sicherheits- und Konformitätsdokumente zu diesem Produkt.",
+      "sdsTitle": "Sicherheitsdatenblatt (SDS)",
+      "sdsDescription": "Öffnet das aktuelle Sicherheitsdatenblatt in einem neuen Fenster.",
+      "sdsAvailable": "Sicherheitsdatenblatt verfügbar",
+      "sdsReference": "Dokumentreferenz: {reference}. Kontaktieren Sie Janvey für die aktuelle Datei.",
+      "noSds": "Für dieses Produkt ist kein Sicherheitsdatenblatt hinterlegt.",
+      "additionalHeading": "Weitere Informationen",
+      "literatureTitle": "Produktliteratur",
+      "literatureDescription": "Öffnet Broschüren, Datenblätter oder Herstellerliteratur.",
+      "videoTitle": "Produktvideo",
+      "videoDescription": "Produktvorführungen oder Schulungsmaterial ansehen.",
+      "noAdditional": "Für dieses Produkt sind keine weiteren Unterlagen oder Videos hinterlegt."
+    },
     "trustBadges": {
       "fastShipping": "Schneller Versand",
       "freeReturns": "Kostenlose Rücksendung",

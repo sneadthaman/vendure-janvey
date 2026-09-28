@@ -11,6 +11,9 @@
     "errorTitle": "Error",
     "errorAddToCart": "Failed to add item to cart",
     "sku": "SKU: {sku}",
+    "quantity": "Quantity",
+    "decreaseQuantity": "Decrease quantity",
+    "increaseQuantity": "Increase quantity",
     "from": "From",
     "noImage": "No image",
     "featuredProducts": "Featured Products",
@@ -21,6 +24,56 @@
     "noProductsFound": "No products found",
     "shopProductAt": "Shop {name} at {siteName}",
     "productCount": "{count, plural, one {# product} other {# products}}",
+    "service": {
+      "accountPricing": {
+        "title": "Your account pricing",
+        "description": "Sign in to see pricing for your organization."
+      },
+      "businessPurchasing": {
+        "title": "Built for business purchasing",
+        "description": "Use approved ship-to locations and purchasing controls."
+      },
+      "support": {
+        "title": "Janvey product support",
+        "description": "Get help selecting the right product for the work."
+      }
+    },
+    "specLabels": {
+      "manufacturer": "Manufacturer",
+      "sku": "Janvey item number",
+      "mpn": "Manufacturer part number",
+      "upc": "UPC",
+      "packSize": "Pack size",
+      "weight": "Weight",
+      "dimensions": "Package dimensions (L × W × H)",
+      "palletQuantity": "Pallet quantity",
+      "countryOfManufacture": "Country of manufacture",
+      "pounds": "lb",
+      "inches": "in"
+    },
+    "tabs": {
+      "details": "Details",
+      "specs": "Specs",
+      "regulatory": "Regulatory",
+      "additional": "Additional Information",
+      "detailsHeading": "Product details",
+      "noDetails": "Detailed product information is not available yet.",
+      "specsHeading": "Product specifications",
+      "noSpecs": "Product specifications are not available yet.",
+      "regulatoryHeading": "Regulatory documents",
+      "regulatoryDescription": "Access safety and compliance documents supplied for this product.",
+      "sdsTitle": "Safety Data Sheet (SDS)",
+      "sdsDescription": "Open the current safety data sheet in a new window.",
+      "sdsAvailable": "Safety Data Sheet available",
+      "sdsReference": "Document reference: {reference}. Contact Janvey for the current file.",
+      "noSds": "A Safety Data Sheet is not listed for this product.",
+      "additionalHeading": "Additional information",
+      "literatureTitle": "Product literature",
+      "literatureDescription": "Open brochures, sell sheets, or manufacturer literature.",
+      "videoTitle": "Product video",
+      "videoDescription": "Watch product demonstrations or training material.",
+      "noAdditional": "No additional literature or videos are listed for this product."
+    },
     "trustBadges": {
       "fastShipping": "Fast Shipping",
       "freeReturns": "Free Returns",

@@ -31,6 +31,20 @@ export const GetProductDetailQuery = graphql(`
             name
             description
             slug
+            customFields {
+                salesDescription
+                storeDescription
+                sdsUrl
+                literatureUrl
+                videoUrl
+            }
+            facetValues {
+                name
+                facet {
+                    code
+                    name
+                }
+            }
             assets {
                 id
                 preview
@@ -42,6 +56,18 @@ export const GetProductDetailQuery = graphql(`
                 sku
                 price
                 stockLevel
+                customFields {
+                    mpn
+                    upc
+                    countryOfManufacture
+                    weight
+                    packLength
+                    packWidth
+                    packHeight
+                    palletQuantity
+                    packSize
+                    purchasable
+                }
                 options {
                     id
                     code

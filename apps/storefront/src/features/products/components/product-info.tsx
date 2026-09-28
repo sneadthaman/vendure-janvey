@@ -7,7 +7,7 @@ import {Button} from '@/components/ui/button';
 import {Label} from '@/components/ui/label';
 import {RadioGroup, RadioGroupItem} from '@/components/ui/radio-group';
 import {Separator} from '@/components/ui/separator';
-import {ShoppingCart, CheckCircle2} from 'lucide-react';
+import {ShoppingCart, CheckCircle2, Minus, Plus} from 'lucide-react';
 import {addToCart} from '@/features/products/add-to-cart';
 import {toast} from 'sonner';
 import {Price} from '@/features/pricing/price';
@@ -49,15 +49,18 @@ interface ProductInfoProps {
     };
     searchParams: { [key: string]: string | string[] | undefined };
     currencyCode: string;
+    manufacturer?: string;
+    summary?: string | null;
 }
 
-export function ProductInfo({product, searchParams, currencyCode}: ProductInfoProps) {
+export function ProductInfo({product, searchParams, currencyCode, manufacturer, summary}: ProductInfoProps) {
     const t = useTranslations('Product');
     const pathname = usePathname();
     const router = useRouter();
     const currentSearchParams = useSearchParams();
     const [isPending, startTransition] = useTransition();
     const [isAdded, setIsAdded] = useState(false);
+    const [quantity, setQuantity] = useState(1);
 
     // Initialize selected options from URL
     const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(() => {
@@ -119,7 +122,7 @@ export function ProductInfo({product, searchParams, currencyCode}: ProductInfoPr
         if (!selectedVariant) return;
 
         startTransition(async () => {
-            const result = await addToCart(selectedVariant.id, 1);
+            const result = await addToCart(selectedVariant.id, quantity);
 
             if (result.success) {
                 setIsAdded(true);
@@ -141,23 +144,20 @@ export function ProductInfo({product, searchParams, currencyCode}: ProductInfoPr
     const canAddToCart = selectedVariant && isInStock;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 rounded-2xl border bg-white p-6 shadow-sm md:p-8">
             {/* Product Title & Price */}
             <div className="space-y-2">
-                <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{product.name}</h1>
+                {manufacturer && <p className="text-sm font-bold uppercase tracking-[0.14em] text-[#bc520e]">{manufacturer}</p>}
+                <h1 className="text-3xl font-bold tracking-tight text-slate-950 md:text-4xl">{product.name}</h1>
+                {summary && <div className="line-clamp-5 pt-2 text-base leading-7 text-slate-600 [&_p]:mb-2" dangerouslySetInnerHTML={{__html: summary}}/>}
                 {selectedVariant && (
-                    <p className="text-2xl md:text-3xl text-muted-foreground font-semibold mt-3">
+                    <p className="mt-4 text-2xl font-bold text-slate-950 md:text-3xl">
                         <Price value={selectedVariant.price} currencyCode={currencyCode}/>
                     </p>
                 )}
             </div>
 
             <Separator />
-
-            {/* Product Description */}
-            <div className="prose prose-sm max-w-none text-muted-foreground">
-                <div dangerouslySetInnerHTML={{__html: product.description}}/>
-            </div>
 
             {/* Option Groups */}
             {product.optionGroups.length > 0 && (
@@ -211,11 +211,18 @@ export function ProductInfo({product, searchParams, currencyCode}: ProductInfoPr
                 </div>
             )}
 
-            {/* Add to Cart Button */}
-            <div className="pt-2 space-y-3">
+            {/* Quantity & Add to Cart */}
+            <div className="space-y-3 pt-2">
+                <Label htmlFor="product-quantity" className="text-sm font-semibold">{t('quantity')}</Label>
+                <div className="grid grid-cols-[132px_1fr] gap-3">
+                    <div className="flex h-12 items-center rounded-lg border bg-white">
+                        <Button type="button" variant="ghost" size="icon" className="h-10 w-10 shrink-0" onClick={() => setQuantity(value => Math.max(1, value - 1))} disabled={quantity <= 1 || isPending}><Minus className="size-4"/><span className="sr-only">{t('decreaseQuantity')}</span></Button>
+                        <input id="product-quantity" type="number" min="1" max="999" inputMode="numeric" value={quantity} onChange={event => setQuantity(Math.min(999, Math.max(1, Number.parseInt(event.target.value, 10) || 1)))} className="min-w-0 flex-1 bg-transparent text-center font-semibold outline-none"/>
+                        <Button type="button" variant="ghost" size="icon" className="h-10 w-10 shrink-0" onClick={() => setQuantity(value => Math.min(999, value + 1))} disabled={quantity >= 999 || isPending}><Plus className="size-4"/><span className="sr-only">{t('increaseQuantity')}</span></Button>
+                    </div>
                 <Button
                     size="lg"
-                    className="w-full h-12 text-base font-semibold rounded-lg"
+                    className="h-12 rounded-lg bg-[#0d3158] text-base font-semibold hover:bg-[#174a78]"
                     disabled={!canAddToCart || isPending}
                     onClick={handleAddToCart}
                 >
@@ -237,6 +244,7 @@ export function ProductInfo({product, searchParams, currencyCode}: ProductInfoPr
                         </>
                     )}
                 </Button>
+                </div>
             </div>
 
             {/* SKU */}
