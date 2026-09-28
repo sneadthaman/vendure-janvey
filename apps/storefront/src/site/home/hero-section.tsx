@@ -24,7 +24,7 @@ export async function HeroSection() {
                         <div className="mt-8 flex items-center gap-3 border-t pt-5 text-sm font-medium text-slate-600"><ShieldCheck className="size-5 text-[#ed721c]"/>{t('accountPricing')}</div>
                     </div>
                     <div className="relative min-h-80 lg:min-h-[500px]">
-                        <Image src="/images/brand/facility-walk.jpg" alt="Janvey team walking through the warehouse" fill priority className="object-cover" sizes="(max-width: 1024px) 100vw, 55vw"/>
+                        <Image src="/images/brand/warehouse-racking.jpg" alt="Forklift operating between stocked warehouse racks" fill priority className="object-cover" sizes="(max-width: 1024px) 100vw, 55vw"/>
                         <div className="absolute inset-0 bg-gradient-to-r from-black/15 via-transparent to-transparent"/>
                         <div className="absolute bottom-5 right-5 rounded-lg bg-white/95 px-5 py-3 text-sm font-semibold text-slate-900 shadow-lg backdrop-blur">{t('photoCaption')}</div>
                     </div>
