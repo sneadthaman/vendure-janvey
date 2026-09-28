@@ -9,13 +9,13 @@ import {query} from "@/platform/vendure/api";
 import {SearchProductsQuery} from '@/features/search/graphql';
 
 interface SearchResultsProps {
-    searchParams: Promise<{
-        page?: string
-    }>
+    searchParams: Promise<Record<string,string|string[]|undefined>>;
+    forcedTerm?:string;
 }
 
-export async function SearchResults({searchParams}: SearchResultsProps) {
-    const searchParamsResolved = await searchParams;
+export async function SearchResults({searchParams,forcedTerm}: SearchResultsProps) {
+    const incomingParams = await searchParams;
+    const searchParamsResolved = forcedTerm?{...incomingParams,q:forcedTerm}:incomingParams;
     const locale = await getRouteLocale();
     const currencyCode = await getActiveCurrencyCode();
     const page = getCurrentPage(searchParamsResolved);

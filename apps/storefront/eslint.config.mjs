@@ -4,6 +4,7 @@ const featureNames = [
   "account",
   "authentication",
   "b2b",
+  "brands",
   "cart",
   "checkout",
   "collections",

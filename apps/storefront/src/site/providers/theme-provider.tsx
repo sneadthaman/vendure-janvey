@@ -6,8 +6,9 @@ export function ThemeProvider({children}: {children: React.ReactNode}) {
     return (
         <NextThemesProvider
             attribute="class"
-            defaultTheme="system"
-            enableSystem
+            defaultTheme="light"
+            forcedTheme="light"
+            enableSystem={false}
             disableTransitionOnChange
             // Run the initial theme script in server HTML; client mounts use the
             // provider's effects, so their script must be an inert data block.

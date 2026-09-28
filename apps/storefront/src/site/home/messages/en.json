@@ -1,28 +1,45 @@
 {
   "Hero": {
-    "title": "Discover Quality",
-    "titleHighlight": "Products",
-    "subtitle": "Premium products, exceptional prices. Free shipping on orders over $50.",
-    "shopNow": "Shop Now",
-    "viewCollections": "View Collections"
+    "eyebrow": "Janvey facility solutions",
+    "title": "Facility supplies that keep work moving.",
+    "subtitle": "Shop professional cleaning, paper, equipment and facility essentials backed by knowledgeable local support.",
+    "shopNow": "Shop products",
+    "shopSss": "Browse SSS Brand",
+    "accountPricing": "Sign in to see your organization’s pricing and approved ship-to locations.",
+    "photoCaption": "People who know your operation"
   },
   "Home": {
-    "pageTitle": "Your One-Stop Shop",
-    "description": "Discover high-quality products at competitive prices. Shop now for the best deals on electronics, fashion, home goods, and more.",
-    "ogDescription": "Discover high-quality products at competitive prices. Shop now for the best deals.",
-    "whyShopWithUs": "Why Shop With Us",
+    "pageTitle": "Professional Facility Supplies",
+    "description": "Shop professional cleaning supplies, paper products, equipment and facility essentials from Janvey.",
+    "ogDescription": "Professional facility supplies, customer-specific pricing and knowledgeable support from Janvey.",
+    "whyShopWithUs": "Built for business purchasing",
+    "categories": {
+      "eyebrow": "Products",
+      "title": "Shop by category",
+      "viewAll": "View all products",
+      "shopCategory": "Shop category"
+    },
+    "sssBrand": {
+      "title": "Professional performance. Everyday value.",
+      "description": "Explore the SSS Brand assortment trusted by cleaning professionals for dependable facility care.",
+      "shopAll": "Shop all SSS Brand products"
+    },
     "features": {
-      "highQuality": {
-        "title": "High Quality",
-        "description": "Premium products carefully selected for you"
+      "reliableFulfillment": {
+        "title": "Reliable fulfillment",
+        "description": "A broad catalog supported by a team that understands facility operations."
       },
-      "bestPrices": {
-        "title": "Best Prices",
-        "description": "Competitive pricing on all our products"
+      "accountPricing": {
+        "title": "Your account pricing",
+        "description": "Signed-in customers see pricing tied directly to their organization."
       },
-      "fastDelivery": {
-        "title": "Fast Delivery",
-        "description": "Quick and reliable shipping worldwide"
+      "purchasingControl": {
+        "title": "Purchasing control",
+        "description": "Approved addresses and order workflows keep purchasing organized."
+      },
+      "customerSupport": {
+        "title": "Knowledgeable support",
+        "description": "Get help from people who know the products and your operation."
       }
     }
   }

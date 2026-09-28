@@ -27,12 +27,12 @@ export function SearchInput() {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="relative">
+        <form onSubmit={handleSubmit} className="relative w-full max-w-xl">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"/>
             <Input
                 type="search"
                 placeholder={t('searchProducts')}
-                className="pl-9 w-64 bg-transparent"
+                className="h-11 w-full border-slate-300 bg-slate-50 pl-10 pr-4 focus:bg-white"
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
                 disabled={isPending}

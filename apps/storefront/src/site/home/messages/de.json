@@ -1,28 +1,45 @@
 {
   "Hero": {
-    "title": "Entdecke hochwertige",
-    "titleHighlight": "Produkte",
-    "subtitle": "Hochwertige Produkte zu außergewöhnlichen Preisen. Kostenloser Versand ab 50 €.",
-    "shopNow": "Jetzt einkaufen",
-    "viewCollections": "Kategorien ansehen"
+    "eyebrow": "Janvey Betriebslösungen",
+    "title": "Betriebsbedarf, der die Arbeit in Bewegung hält.",
+    "subtitle": "Professionelle Reinigungs-, Papier-, Geräte- und Betriebsprodukte mit kompetenter Unterstützung.",
+    "shopNow": "Produkte kaufen",
+    "shopSss": "SSS Brand entdecken",
+    "accountPricing": "Melden Sie sich an, um Ihre Firmenpreise und genehmigten Lieferadressen zu sehen.",
+    "photoCaption": "Menschen, die Ihren Betrieb verstehen"
   },
   "Home": {
-    "pageTitle": "Ihr One-Stop-Shop",
-    "description": "Entdecken Sie hochwertige Produkte zu wettbewerbsfähigen Preisen. Jetzt einkaufen und die besten Angebote für Elektronik, Mode, Haushaltswaren und mehr finden.",
-    "ogDescription": "Entdecken Sie hochwertige Produkte zu wettbewerbsfähigen Preisen. Jetzt die besten Angebote sichern.",
-    "whyShopWithUs": "Warum bei uns einkaufen",
+    "pageTitle": "Professioneller Betriebsbedarf",
+    "description": "Professionelle Reinigungsprodukte, Papierwaren, Geräte und Betriebsbedarf von Janvey.",
+    "ogDescription": "Professioneller Betriebsbedarf, kundenspezifische Preise und kompetente Unterstützung von Janvey.",
+    "whyShopWithUs": "Für den Geschäftseinkauf entwickelt",
+    "categories": {
+      "eyebrow": "Produkte",
+      "title": "Nach Kategorie einkaufen",
+      "viewAll": "Alle Produkte ansehen",
+      "shopCategory": "Kategorie ansehen"
+    },
+    "sssBrand": {
+      "title": "Professionelle Leistung. Zuverlässiger Wert.",
+      "description": "Entdecken Sie das SSS Brand Sortiment, auf das Reinigungsprofis bei der zuverlässigen Gebäudepflege vertrauen.",
+      "shopAll": "Alle SSS Brand Produkte ansehen"
+    },
     "features": {
-      "highQuality": {
-        "title": "Hohe Qualität",
-        "description": "Sorgfältig ausgewählte Premiumprodukte für Sie"
+      "reliableFulfillment": {
+        "title": "Zuverlässige Lieferung",
+        "description": "Ein breites Sortiment, unterstützt von einem Team mit Erfahrung im Gebäudebetrieb."
       },
-      "bestPrices": {
-        "title": "Beste Preise",
-        "description": "Wettbewerbsfähige Preise für alle unsere Produkte"
+      "accountPricing": {
+        "title": "Ihre Firmenpreise",
+        "description": "Angemeldete Kunden sehen die Preise ihrer Organisation."
       },
-      "fastDelivery": {
-        "title": "Schnelle Lieferung",
-        "description": "Schneller und zuverlässiger Versand weltweit"
+      "purchasingControl": {
+        "title": "Einkaufskontrolle",
+        "description": "Genehmigte Adressen und Bestellabläufe sorgen für Übersicht."
+      },
+      "customerSupport": {
+        "title": "Kompetente Unterstützung",
+        "description": "Hilfe von Menschen, die die Produkte und Ihren Betrieb kennen."
       }
     }
   }

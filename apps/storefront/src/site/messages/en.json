@@ -7,17 +7,15 @@
     "popularCollections": "Popular Collections"
   },
   "Footer": {
-    "description": "A modern, headless e-commerce storefront built with Vendure and Next.js. Fast, flexible, and ready for production.",
+    "description": "Professional cleaning, facility and maintenance supplies backed by knowledgeable service.",
     "categories": "Categories",
     "customer": "Customer",
     "shopAll": "Shop All",
     "orders": "Orders",
     "account": "Account",
-    "vendure": "Vendure",
-    "github": "GitHub",
-    "documentation": "Documentation",
-    "sourceCode": "Source Code",
-    "copyright": "Vendure Store. All rights reserved.",
-    "poweredBy": "Powered by"
+    "featuredBrand": "Featured brand",
+    "sssDescription": "Professional products built for dependable everyday performance.",
+    "copyright": "Janvey. All rights reserved.",
+    "serviceLine": "Facility solutions with people behind them."
   }
 }

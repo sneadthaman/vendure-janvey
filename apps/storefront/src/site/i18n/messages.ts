@@ -2,6 +2,7 @@ import {accountMessageLoaders} from '@/features/account/messages';
 import {authenticationMessageLoaders} from '@/features/authentication/messages';
 import {cartMessageLoaders} from '@/features/cart/messages';
 import {b2bMessageLoaders} from '@/features/b2b/messages';
+import {brandsMessageLoaders} from '@/features/brands/messages';
 import {checkoutMessageLoaders} from '@/features/checkout/messages';
 import {collectionsMessageLoaders} from '@/features/collections/messages';
 import {ordersMessageLoaders} from '@/features/orders/messages';
@@ -20,6 +21,7 @@ import {siteMessageLoaders} from '@/site/messages';
 const registrations: MessageLoaders[] = [
     accountMessageLoaders,
     b2bMessageLoaders,
+    brandsMessageLoaders,
     authenticationMessageLoaders,
     cartMessageLoaders,
     checkoutMessageLoaders,

@@ -15,20 +15,22 @@ interface ProductCardProps {
 export function ProductCard({product: productProp, preload, priceOverride}: ProductCardProps) {
     const t = useTranslations('Product');
     const product = readFragment(ProductCardFragment, productProp);
+    const isSssBrand = product.sku.trim().toUpperCase().startsWith('SSS ');
 
     return (
         <Link
             href={`/product/${product.slug}`}
-            className="group block bg-card rounded-xl overflow-hidden border border-border hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+            className="group block overflow-hidden rounded-lg border border-slate-200 bg-white transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg"
         >
-            <div className="aspect-square relative bg-muted overflow-hidden">
+            <div className="relative aspect-square overflow-hidden bg-white">
+                {isSssBrand&&<span className="absolute left-3 top-3 z-10 rounded bg-[#ed721c] px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-white">SSS Brand</span>}
                 {product.productAsset ? (
                     <Image
                         src={product.productAsset.preview}
                         alt={product.productName}
                         fill
                         preload={preload}
-                        className="object-cover group-hover:scale-105 group-hover:opacity-90 transition-all duration-500"
+                        className="object-contain p-5 transition-transform duration-300 group-hover:scale-105"
                         sizes="(max-width: 640px) calc(100vw - 2rem), (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
                     />
                 ) : (
@@ -37,12 +39,13 @@ export function ProductCard({product: productProp, preload, priceOverride}: Prod
                     </div>
                 )}
             </div>
-            <div className="p-4 space-y-2">
-                <h3 className="font-medium leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+            <div className="space-y-2 border-t bg-white p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{product.sku}</p>
+                <h3 className="line-clamp-2 min-h-11 font-semibold leading-snug text-slate-900 transition-colors group-hover:text-[#0d3158]">
                     {product.productName}
                 </h3>
                 <Suspense fallback={<div className="h-8 w-36 rounded bg-muted"></div>}>
-                    <p className="text-lg font-bold tracking-tight">
+                    <p className="text-lg font-bold tracking-tight text-slate-950">
                         {priceOverride!==undefined?<Price value={priceOverride} currencyCode={product.currencyCode}/>:product.price.__typename === 'PriceRange' ? (
                             product.price.min !== product.price.max ? (
                                 <>

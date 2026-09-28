@@ -1,50 +1,47 @@
-import Image from "next/image";
+import Image from 'next/image';
+import {Suspense} from 'react';
+import {getTranslations} from 'next-intl/server';
+import {getRouteLocale} from '@/platform/i18n/server';
 import {NavigationLink} from '@/site/navigation/navigation-link';
 import {NavbarCollections} from '@/site/navigation/navbar/navbar-collections';
 import {NavbarCart} from '@/site/navigation/navbar/navbar-cart';
 import {NavbarUser} from '@/site/navigation/navbar/navbar-user';
-import {ThemeSwitcher} from '@/site/navigation/navbar/theme-switcher';
-import {LanguagePicker} from '@/site/navigation/navbar/language-picker';
-import {CurrencyPickerWrapper} from '@/site/navigation/navbar/currency-picker-wrapper';
 import {MobileNavWrapper} from '@/site/navigation/navbar/mobile-nav-wrapper';
-import {Suspense} from "react";
 import {SearchInput} from '@/site/navigation/search-input';
 import {NavbarUserSkeleton} from '@/site/navigation/skeletons/navbar-user-skeleton';
 import {SearchInputSkeleton} from '@/site/navigation/skeletons/search-input-skeleton';
 
+async function DesktopNavigation() {
+    const locale = await getRouteLocale();
+    const t = await getTranslations({locale, namespace: 'Navigation'});
+
+    return <nav className="hidden items-center gap-1 md:flex">
+        <Suspense><NavbarCollections/></Suspense>
+        <NavigationLink href="/sss-brand" className="rounded-md px-3 py-2 text-sm font-bold text-[#bc520e] hover:bg-orange-50">{t('sssBrand')}</NavigationLink>
+        <NavigationLink href="/search" className="hidden rounded-md px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 xl:block">{t('shopAll')}</NavigationLink>
+    </nav>;
+}
+
 export function Navbar() {
     return (
-        <header className="fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-md bg-background/80">
+        <header className="fixed inset-x-0 top-0 z-50 border-b bg-white/95 shadow-sm backdrop-blur-md">
             <div className="container mx-auto px-4">
-                <div className="flex items-center justify-between h-16">
-                    <div className="flex items-center gap-8">
+                <div className="flex h-20 items-center gap-4 lg:gap-7">
+                    <div className="flex shrink-0 items-center gap-3">
                         <Suspense>
                             <MobileNavWrapper />
                         </Suspense>
-                        <NavigationLink href="/" className="text-xl font-bold">
-                            <Image src="/vendure.svg" alt="Vendure" width={40} height={27} className="h-6 w-auto dark:invert" />
+                        <NavigationLink href="/" className="block">
+                            <Image src="/images/brand/janvey.png" alt="Janvey" width={250} height={86} priority className="h-10 w-auto" />
                         </NavigationLink>
-                        <nav className="hidden md:flex items-center gap-6">
-                            <Suspense>
-                                <NavbarCollections/>
-                            </Suspense>
-                        </nav>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <div className="hidden lg:flex">
+                    <Suspense><DesktopNavigation/></Suspense>
+                    <div className="ml-auto flex min-w-0 items-center gap-2 lg:flex-1">
+                        <div className="hidden min-w-0 flex-1 lg:flex lg:justify-end">
                             <Suspense fallback={<SearchInputSkeleton />}>
                                 <SearchInput/>
                             </Suspense>
                         </div>
-                        <Suspense>
-                            <LanguagePicker />
-                        </Suspense>
-                        <Suspense>
-                            <CurrencyPickerWrapper />
-                        </Suspense>
-                        <Suspense>
-                            <ThemeSwitcher />
-                        </Suspense>
                         <Suspense>
                             <NavbarCart/>
                         </Suspense>

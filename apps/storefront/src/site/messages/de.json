@@ -7,17 +7,15 @@
     "popularCollections": "Beliebte Kategorien"
   },
   "Footer": {
-    "description": "Ein moderner, Headless-E-Commerce-Shop, erstellt mit Vendure und Next.js. Schnell, flexibel und produktionsbereit.",
+    "description": "Professionelle Reinigungs-, Gebäude- und Wartungsprodukte mit kompetentem Service.",
     "categories": "Kategorien",
     "customer": "Kunde",
     "shopAll": "Alle Produkte",
     "orders": "Bestellungen",
     "account": "Konto",
-    "vendure": "Vendure",
-    "github": "GitHub",
-    "documentation": "Dokumentation",
-    "sourceCode": "Quellcode",
-    "copyright": "Vendure Store. Alle Rechte vorbehalten.",
-    "poweredBy": "Powered by"
+    "featuredBrand": "Empfohlene Marke",
+    "sssDescription": "Professionelle Produkte für zuverlässige Leistung im Alltag.",
+    "copyright": "Janvey. Alle Rechte vorbehalten.",
+    "serviceLine": "Betriebslösungen mit persönlichem Service."
   }
 }

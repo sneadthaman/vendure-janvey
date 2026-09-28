@@ -85,6 +85,8 @@ export function MobileNav({collections}: MobileNavProps) {
                         </SheetClose>
                     </div>
 
+                    <SheetClose render={<Link href="/sss-brand" className="mx-3 rounded-md bg-orange-50 px-3 py-3 font-bold text-[#bc520e]"/>} nativeButton={false} onClick={handleLinkClick}>{t('sssBrand')}</SheetClose>
+
                     {/* Collections */}
                     {collections.length > 0 && (
                         <div>
@@ -95,7 +97,7 @@ export function MobileNav({collections}: MobileNavProps) {
                                 {collections.map(collection=><AccordionItem key={collection.slug} value={collection.slug}>
                                     <AccordionTrigger className="px-2 py-3">{collection.name}</AccordionTrigger>
                                     <AccordionContent className="flex flex-col gap-1 pl-3">
-                                        <SheetClose render={<Link href={`/collection/${collection.slug}`} className="rounded-md px-3 py-2 font-medium hover:bg-accent" />} nativeButton={false} onClick={handleLinkClick}>Shop all {collection.name}</SheetClose>
+                                        <SheetClose render={<Link href={`/collection/${collection.slug}`} className="rounded-md px-3 py-2 font-medium hover:bg-accent" />} nativeButton={false} onClick={handleLinkClick}>{t('shopAllCollection', {collection: collection.name})}</SheetClose>
                                         {collection.children?.map(child=><SheetClose key={child.slug} render={<Link href={`/collection/${child.slug}`} className="rounded-md px-3 py-2 hover:bg-accent" />} nativeButton={false} onClick={handleLinkClick}>{child.name}</SheetClose>)}
                                     </AccordionContent>
                                 </AccordionItem>)}
