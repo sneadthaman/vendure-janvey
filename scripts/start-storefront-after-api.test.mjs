@@ -2,7 +2,14 @@ import assert from 'node:assert/strict';
 import http from 'node:http';
 import test from 'node:test';
 
-import {waitForApi} from './start-storefront-after-api.mjs';
+import {npmCommand, waitForApi} from './start-storefront-after-api.mjs';
+
+test('launches npm through Node instead of a platform-specific command shim', () => {
+    const command = npmCommand({npm_execpath:'C:\\tools\\npm-cli.js'});
+    assert.equal(command.executable, process.execPath);
+    assert.deepEqual(command.arguments, ['C:\\tools\\npm-cli.js','run','dev','-w','storefront']);
+    assert.throws(() => npmCommand({}), /npm_execpath is unavailable/);
+});
 
 test('waits through unavailable responses until the API is healthy', async () => {
     let requests = 0;

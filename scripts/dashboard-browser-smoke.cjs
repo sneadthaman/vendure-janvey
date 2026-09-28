@@ -55,25 +55,26 @@ async function main(){
             inputCount=inputs.result.value;
             if(inputCount>=2)break;
         }
-        if(inputCount<2)throw new Error('Dashboard login form did not render.');
-        const globalObject=await send('Runtime.evaluate',{expression:'globalThis'});
-        const login=await send('Runtime.callFunctionOn',{
-            objectId:globalObject.result.objectId,
-            functionDeclaration:`function(username,password){
-                const inputs=[...document.querySelectorAll('input')];
-                if(inputs.length<2) return {ok:false,reason:'login inputs missing'};
-                const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;
-                setter.call(inputs[0],username);inputs[0].dispatchEvent(new Event('input',{bubbles:true}));
-                setter.call(inputs[1],password);inputs[1].dispatchEvent(new Event('input',{bubbles:true}));
-                const button=document.querySelector('button[type="submit"]')||document.querySelector('button');
-                if(!button)return {ok:false,reason:'submit button missing'};
-                button.click();return {ok:true};
-            }`,
-            arguments:[{value:process.env.SUPERADMIN_USERNAME},{value:process.env.SUPERADMIN_PASSWORD}],
-            returnByValue:true,
-        });
-        if(!login.result.value?.ok) throw new Error(login.result.value?.reason||'Dashboard login failed.');
-        await delay(4000);
+        if(inputCount>=2){
+            const globalObject=await send('Runtime.evaluate',{expression:'globalThis'});
+            const login=await send('Runtime.callFunctionOn',{
+                objectId:globalObject.result.objectId,
+                functionDeclaration:`function(username,password){
+                    const inputs=[...document.querySelectorAll('input')];
+                    if(inputs.length<2) return {ok:false,reason:'login inputs missing'};
+                    const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;
+                    setter.call(inputs[0],username);inputs[0].dispatchEvent(new Event('input',{bubbles:true}));
+                    setter.call(inputs[1],password);inputs[1].dispatchEvent(new Event('input',{bubbles:true}));
+                    const button=document.querySelector('button[type="submit"]')||document.querySelector('button');
+                    if(!button)return {ok:false,reason:'submit button missing'};
+                    button.click();return {ok:true};
+                }`,
+                arguments:[{value:process.env.SUPERADMIN_USERNAME},{value:process.env.SUPERADMIN_PASSWORD}],
+                returnByValue:true,
+            });
+            if(!login.result.value?.ok) throw new Error(login.result.value?.reason||'Dashboard login failed.');
+            await delay(4000);
+        }
         await send('Page.navigate',{url:'http://localhost:3000/dashboard/netsuite-sync'});
         await delay(5000);
         const state=await send('Runtime.evaluate',{expression:`({url:location.href,text:document.body.innerText})`,returnByValue:true});

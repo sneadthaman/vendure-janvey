@@ -24,6 +24,13 @@ export async function waitForApi(url, options = {}) {
     throw new Error(`Vendure API did not become healthy within ${Math.ceil(timeoutMs / 1000)} seconds (${url}).`);
 }
 
+export function npmCommand(environment = process.env) {
+    if (!environment.npm_execpath) {
+        throw new Error('npm_execpath is unavailable. Start the stack through npm run dev.');
+    }
+    return {executable: process.execPath, arguments: [environment.npm_execpath, 'run', 'dev', '-w', 'storefront']};
+}
+
 export async function startStorefront() {
     require('dotenv').config({path: `${serverDirectory}/.env`, quiet: true});
     const apiPort = Number(process.env.PORT || process.env.VENDURE_SERVER_PORT || 3000);
@@ -33,8 +40,8 @@ export async function startStorefront() {
     await waitForApi(healthUrl);
     console.log('[dev] Vendure API is healthy; starting the storefront.');
 
-    const npmExecutable = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-    const child = spawn(npmExecutable, ['run', 'dev', '-w', 'storefront'], {
+    const command = npmCommand();
+    const child = spawn(command.executable, command.arguments, {
         cwd: repositoryDirectory,
         stdio: 'inherit',
         windowsHide: true,
