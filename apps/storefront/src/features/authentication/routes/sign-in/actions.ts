@@ -4,7 +4,7 @@ import {mutate} from '@/platform/vendure/api';
 import {LoginMutation} from '@/features/authentication/graphql';
 import {setAuthToken} from '@/platform/vendure/auth-token';
 import {redirect} from '@/platform/i18n/navigation';
-import {revalidatePath} from "next/cache";
+import {revalidatePath,updateTag} from "next/cache";
 import {getLocale, getTranslations} from 'next-intl/server';
 
 export async function loginAction(prevState: { error?: string } | undefined, formData: FormData) {
@@ -33,6 +33,8 @@ export async function loginAction(prevState: { error?: string } | undefined, for
     }
 
     const locale = await getLocale();
+    updateTag('cart');
+    updateTag('active-order');
     revalidatePath(`/${locale}`, 'layout');
 
     // Validate redirectTo is a safe internal path

@@ -91,8 +91,8 @@ export default function CheckoutFlow() {
   };
 
   return (
-    <div className="grid lg:grid-cols-3 gap-8">
-      <div className="lg:col-span-2">
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <div>
         {/* Step Progress Indicator */}
         <div className="mb-8 hidden sm:block">
           <div className="flex items-center justify-between">
@@ -102,10 +102,10 @@ export default function CheckoutFlow() {
                   <div
                     className={`flex items-center justify-center w-9 h-9 rounded-full text-sm font-semibold transition-all duration-300 ${
                       completedSteps.has(step)
-                        ? 'bg-primary text-primary-foreground'
+                        ? 'bg-[#0d3158] text-white'
                         : currentStep === step
-                        ? 'bg-primary text-primary-foreground ring-4 ring-primary/20'
-                        : 'bg-muted text-muted-foreground'
+                        ? 'bg-[#0d3158] text-white ring-4 ring-blue-100'
+                        : 'bg-slate-200 text-slate-500'
                     }`}
                   >
                     {completedSteps.has(step) ? (
@@ -116,8 +116,8 @@ export default function CheckoutFlow() {
                   </div>
                   <span className={`text-xs font-medium whitespace-nowrap ${
                     completedSteps.has(step) || currentStep === step
-                      ? 'text-primary'
-                      : 'text-muted-foreground'
+                      ? 'text-[#0d3158]'
+                      : 'text-slate-500'
                   }`}>
                     {stepLabels[step]}
                   </span>
@@ -125,7 +125,7 @@ export default function CheckoutFlow() {
                 {index < stepOrder.length - 1 && (
                   <div className="flex-1 mx-2 mb-5">
                     <div className={`h-0.5 w-full transition-colors duration-300 ${
-                      completedSteps.has(step) ? 'bg-primary' : 'bg-muted'
+                      completedSteps.has(step) ? 'bg-[#0d3158]' : 'bg-slate-200'
                     }`} />
                   </div>
                 )}
@@ -145,15 +145,15 @@ export default function CheckoutFlow() {
           className="space-y-4"
         >
           {isGuest && (
-            <AccordionItem value="contact" className="border rounded-lg px-6">
+            <AccordionItem value="contact" className="rounded-2xl border border-slate-200 bg-white px-6 shadow-sm">
               <AccordionTrigger className="hover:no-underline">
                 <div className="flex items-center gap-3">
                   <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ${
                     completedSteps.has('contact')
                       ? 'bg-green-500 text-white'
                       : currentStep === 'contact'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-muted-foreground'
+                      ? 'bg-[#0d3158] text-white'
+                      : 'bg-slate-200 text-slate-500'
                   }`}>
                     {completedSteps.has('contact') ? '✓' : getStepNumber('contact')}
                   </div>
@@ -170,7 +170,7 @@ export default function CheckoutFlow() {
 
           <AccordionItem
             value="shipping"
-            className="border rounded-lg px-6"
+            className="rounded-2xl border border-slate-200 bg-white px-6 shadow-sm"
             disabled={!canAccessStep('shipping')}
           >
             <AccordionTrigger
@@ -182,8 +182,8 @@ export default function CheckoutFlow() {
                   completedSteps.has('shipping')
                     ? 'bg-green-500 text-white'
                     : currentStep === 'shipping'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground'
+                    ? 'bg-[#0d3158] text-white'
+                    : 'bg-slate-200 text-slate-500'
                 }`}>
                   {completedSteps.has('shipping') ? '✓' : getStepNumber('shipping')}
                 </div>
@@ -199,7 +199,7 @@ export default function CheckoutFlow() {
 
           <AccordionItem
             value="delivery"
-            className="border rounded-lg px-6"
+            className="rounded-2xl border border-slate-200 bg-white px-6 shadow-sm"
             disabled={!canAccessStep('delivery')}
           >
             <AccordionTrigger
@@ -211,8 +211,8 @@ export default function CheckoutFlow() {
                   completedSteps.has('delivery')
                     ? 'bg-green-500 text-white'
                     : currentStep === 'delivery'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground'
+                    ? 'bg-[#0d3158] text-white'
+                    : 'bg-slate-200 text-slate-500'
                 }`}>
                   {completedSteps.has('delivery') ? '✓' : getStepNumber('delivery')}
                 </div>
@@ -228,7 +228,7 @@ export default function CheckoutFlow() {
 
           {!netsuiteAccount?.requiresApproval&&<AccordionItem
             value="payment"
-            className="border rounded-lg px-6"
+            className="rounded-2xl border border-slate-200 bg-white px-6 shadow-sm"
             disabled={!canAccessStep('payment')}
           >
             <AccordionTrigger
@@ -240,8 +240,8 @@ export default function CheckoutFlow() {
                   completedSteps.has('payment')
                     ? 'bg-green-500 text-white'
                     : currentStep === 'payment'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground'
+                    ? 'bg-[#0d3158] text-white'
+                    : 'bg-slate-200 text-slate-500'
                 }`}>
                   {completedSteps.has('payment') ? '✓' : getStepNumber('payment')}
                 </div>
@@ -257,7 +257,7 @@ export default function CheckoutFlow() {
 
           <AccordionItem
             value="review"
-            className="border rounded-lg px-6"
+            className="rounded-2xl border border-slate-200 bg-white px-6 shadow-sm"
             disabled={!canAccessStep('review')}
           >
             <AccordionTrigger
@@ -267,8 +267,8 @@ export default function CheckoutFlow() {
               <div className="flex items-center gap-3">
                 <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ${
                   currentStep === 'review'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground'
+                    ? 'bg-[#0d3158] text-white'
+                    : 'bg-slate-200 text-slate-500'
                 }`}>
                   {getStepNumber('review')}
                 </div>

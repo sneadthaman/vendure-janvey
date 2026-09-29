@@ -1,6 +1,6 @@
 import {Button} from '@/components/ui/button';
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
-import {Check, ShoppingBag, ClipboardList} from 'lucide-react';
+import {Check, ShoppingBag, ClipboardList, MailCheck, MapPin, ShieldCheck} from 'lucide-react';
 import { Link } from '@/platform/i18n/navigation';
 import Image from 'next/image';
 import {Separator} from '@/components/ui/separator';
@@ -17,8 +17,13 @@ const GetOrderByCodeQuery = graphql(`
             id
             code
             state
+            subTotal
+            shipping
             totalWithTax
             currencyCode
+            taxSummary {
+                taxTotal
+            }
             lines {
                 id
                 productVariant {
@@ -35,6 +40,7 @@ const GetOrderByCodeQuery = graphql(`
                     }
                 }
                 quantity
+                linePrice
                 linePriceWithTax
             }
             shippingAddress {
@@ -66,27 +72,37 @@ export async function OrderConfirmation({paramsPromise}: OrderConfirmationProps)
         notFound();
     }
 
+    const taxTotal = order.taxSummary.reduce((total, taxLine) => total + taxLine.taxTotal, 0);
+
     return (
-        <div className="container mx-auto px-4 py-16">
-            <div className="max-w-3xl mx-auto">
+        <main className="bg-slate-50/70">
+        <div className="container mx-auto px-4 py-12 md:py-16">
+            <div className="mx-auto max-w-4xl">
                 <div className="text-center mb-10">
                     <div className="flex justify-center mb-6">
-                        <div className="rounded-full bg-primary p-5 shadow-lg shadow-primary/25">
-                            <Check className="h-10 w-10 text-primary-foreground" strokeWidth={3} />
+                        <div className="rounded-full bg-emerald-600 p-5 shadow-lg shadow-emerald-600/20">
+                            <Check className="h-10 w-10 text-white" strokeWidth={3} />
                         </div>
                     </div>
-                    <h1 className="text-3xl font-bold mb-2">{t('orderConfirmed')}</h1>
-                    <p className="text-muted-foreground">
+                    <p className="mb-2 text-sm font-bold uppercase tracking-[0.16em] text-[#bc520e]">{t('eyebrow')}</p>
+                    <h1 className="mb-3 text-3xl font-bold tracking-tight text-slate-950 md:text-4xl">{t('orderConfirmed')}</h1>
+                    <p className="text-slate-600">
                         {t('thankYou')}{' '}
                         <span className="font-semibold text-foreground">{order.code}</span>
                     </p>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <p className="mt-2 text-sm text-slate-500">
                         {t('emailConfirmation')}
                     </p>
                 </div>
 
-                <Card className="mb-6">
-                    <CardHeader>
+                <div className="mb-6 grid gap-4 md:grid-cols-3">
+                    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><MailCheck className="mb-3 size-5 text-[#174a78]"/><p className="font-semibold text-slate-950">{t('confirmationSent')}</p><p className="mt-1 text-sm text-slate-600">{t('confirmationSentBody')}</p></div>
+                    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><ShieldCheck className="mb-3 size-5 text-[#174a78]"/><p className="font-semibold text-slate-950">{t('accountRecorded')}</p><p className="mt-1 text-sm text-slate-600">{t('accountRecordedBody')}</p></div>
+                    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><MapPin className="mb-3 size-5 text-[#174a78]"/><p className="font-semibold text-slate-950">{t('fulfillmentNext')}</p><p className="mt-1 text-sm text-slate-600">{t('fulfillmentNextBody')}</p></div>
+                </div>
+
+                <Card className="mb-6 overflow-hidden border-slate-200 shadow-sm">
+                    <CardHeader className="bg-[#0d3158] text-white">
                         <CardTitle>{t('orderSummary')}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -114,11 +130,19 @@ export async function OrderConfirmation({paramsPromise}: OrderConfirmationProps)
                                 </div>
                                 <div className="text-right">
                                     <p className="font-semibold">
-                                        <Price value={line.linePriceWithTax} currencyCode={order.currencyCode}/>
+                                        <Price value={line.linePrice} currencyCode={order.currencyCode}/>
                                     </p>
                                 </div>
                             </div>
                         ))}
+
+                        <Separator/>
+
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between"><span className="text-slate-500">{t('subtotal')}</span><Price value={order.subTotal} currencyCode={order.currencyCode}/></div>
+                            <div className="flex justify-between"><span className="text-slate-500">{t('shipping')}</span><Price value={order.shipping} currencyCode={order.currencyCode}/></div>
+                            <div className="flex justify-between"><span className="text-slate-500">{t('tax')}</span><Price value={taxTotal} currencyCode={order.currencyCode}/></div>
+                        </div>
 
                         <Separator/>
 
@@ -132,7 +156,7 @@ export async function OrderConfirmation({paramsPromise}: OrderConfirmationProps)
                 </Card>
 
                 {order.shippingAddress && (
-                    <Card className="mb-8">
+                    <Card className="mb-8 border-slate-200 shadow-sm">
                         <CardHeader>
                             <CardTitle>{t('shippingAddress')}</CardTitle>
                         </CardHeader>
@@ -163,5 +187,6 @@ export async function OrderConfirmation({paramsPromise}: OrderConfirmationProps)
                 </div>
             </div>
         </div>
+        </main>
     );
 }

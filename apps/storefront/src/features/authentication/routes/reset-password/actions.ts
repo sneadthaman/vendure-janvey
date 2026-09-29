@@ -5,6 +5,7 @@ import {ResetPasswordMutation} from '@/features/authentication/graphql';
 import {setAuthToken} from '@/platform/vendure/auth-token';
 import {redirect} from '@/platform/i18n/navigation';
 import {getLocale, getTranslations} from 'next-intl/server';
+import {updateTag} from 'next/cache';
 
 export async function resetPasswordAction(prevState: { error?: string } | undefined, formData: FormData) {
     const t = await getTranslations('Errors');
@@ -36,6 +37,9 @@ export async function resetPasswordAction(prevState: { error?: string } | undefi
     if (result.token) {
         await setAuthToken(result.token);
     }
+
+    updateTag('cart');
+    updateTag('active-order');
 
     const locale = await getLocale();
     redirect({href: '/', locale});

@@ -4,6 +4,7 @@ import {mutate} from '@/platform/vendure/api';
 import {VerifyCustomerAccountMutation} from '@/features/authentication/graphql';
 import {setAuthToken} from '@/platform/vendure/auth-token';
 import {getTranslations} from 'next-intl/server';
+import {updateTag} from 'next/cache';
 
 export async function verifyAccountAction(token: string, password?: string) {
     const t = await getTranslations('Errors');
@@ -28,6 +29,9 @@ export async function verifyAccountAction(token: string, password?: string) {
         if (result.token) {
             await setAuthToken(result.token);
         }
+
+        updateTag('cart');
+        updateTag('active-order');
 
         return {success: true};
     } catch {

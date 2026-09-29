@@ -9,7 +9,7 @@ import { NetsuiteSyncRun } from './netsuite-sync-run.entity';
 import { netsuiteAdminSchema, NetsuiteSyncResolver } from './netsuite-sync.resolver';
 import { NetsuiteCollectionService } from './services/netsuite-collection.service';
 import { NetsuiteCustomerService } from './services/netsuite-customer.service';
-import { NetsuiteAccount, NetsuiteAccountAddress, NetsuiteContactInvitation, NetsuiteContactLink, NetsuiteCustomerSyncRun, NetsuiteOrderApproval, NetsuiteOrderApprovalEvent } from './entities';
+import { NetsuiteAccount, NetsuiteAccountAddress, NetsuiteContactInvitation, NetsuiteContactLink, NetsuiteCustomerSyncRun, NetsuiteOrderApproval, NetsuiteOrderApprovalEvent, NetsuiteOrderExport } from './entities';
 import { NetsuitePricingService } from './services/netsuite-pricing.service';
 import { netsuiteAddressShippingCalculator, NetsuiteOrderItemPriceStrategy, NetsuiteProductVariantPriceStrategy, NetsuiteTaxLineStrategy } from './b2b-strategies';
 import { NetsuiteApprovalService } from './services/netsuite-approval.service';
@@ -17,6 +17,8 @@ import { netsuiteShopSchema, NetsuiteB2bResolver } from './netsuite-b2b.resolver
 import { netsuiteApprovalOrderProcess, NetsuiteOrderPlacedStrategy } from './netsuite-order-process';
 import {netsuiteCustomerRefreshTask} from './netsuite-customer-refresh.task';
 import {NetsuiteInvitationService} from './services/netsuite-invitation.service';
+import {NetsuiteActiveOrderPricingService} from './services/netsuite-active-order-pricing.service';
+import {NetsuiteOrderExportService} from './services/netsuite-order-export.service';
 
 @VendurePlugin({
     imports: [PluginCommonModule],
@@ -30,8 +32,10 @@ import {NetsuiteInvitationService} from './services/netsuite-invitation.service'
         NetsuitePricingService,
         NetsuiteApprovalService,
         NetsuiteInvitationService,
+        NetsuiteActiveOrderPricingService,
+        NetsuiteOrderExportService,
     ],
-    entities: [NetsuiteSyncRun,NetsuiteAccount,NetsuiteAccountAddress,NetsuiteContactLink,NetsuiteContactInvitation,NetsuiteCustomerSyncRun,NetsuiteOrderApproval,NetsuiteOrderApprovalEvent],
+    entities: [NetsuiteSyncRun,NetsuiteAccount,NetsuiteAccountAddress,NetsuiteContactLink,NetsuiteContactInvitation,NetsuiteCustomerSyncRun,NetsuiteOrderApproval,NetsuiteOrderApprovalEvent,NetsuiteOrderExport],
     dashboard: './dashboard/index.tsx',
     adminApiExtensions: {schema:netsuiteAdminSchema,resolvers:[NetsuiteSyncResolver]},
     shopApiExtensions: {schema:netsuiteShopSchema,resolvers:[NetsuiteB2bResolver]},

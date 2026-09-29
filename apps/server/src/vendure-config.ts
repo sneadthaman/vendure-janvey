@@ -161,6 +161,9 @@ export const config: VendureConfig = {
             imagesUrl: process.env.NETSUITE_IMAGES_RESTLET_URL ||
                 'https://5013697.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=2213&deploy=1',
             customersUrl: process.env.NETSUITE_CUSTOMERS_RESTLET_URL,
+            ordersUrl: process.env.NETSUITE_ORDERS_RESTLET_URL,
+            orderExportMode: parseOrderExportMode(process.env.NETSUITE_ORDER_EXPORT_MODE),
+            shippingMethodInternalId: process.env.NETSUITE_ORDER_SHIPPING_METHOD_ID,
             // A local File Cabinet export is used only where it actually exists.
             // Production deployments continue to use the read-only RESTlet.
             localImagesPath: existsSync(localImagesPath) ? localImagesPath : undefined,
@@ -180,4 +183,10 @@ function requiredEmailEnv(name:keyof NodeJS.ProcessEnv):string{
     const value=process.env[name]?.trim();
     if(!value)throw new Error(`${name} is required when EMAIL_TRANSPORT=microsoft-graph.`);
     return value;
+}
+
+function parseOrderExportMode(value:string|undefined):'disabled'|'dry-run'|'live'{
+    const mode=value?.trim().toLowerCase()||'disabled';
+    if(!['disabled','dry-run','live'].includes(mode))throw new Error('NETSUITE_ORDER_EXPORT_MODE must be disabled, dry-run, or live.');
+    return mode as 'disabled'|'dry-run'|'live';
 }

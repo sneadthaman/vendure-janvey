@@ -13,6 +13,11 @@ export const GetActiveOrderForCheckoutQuery = graphql(`
             shippingWithTax
             total
             totalWithTax
+            taxSummary {
+                description
+                taxRate
+                taxTotal
+            }
             currencyCode
             couponCodes
             customer {
@@ -54,6 +59,7 @@ export const GetActiveOrderForCheckoutQuery = graphql(`
             }
             discounts {
                 description
+                amount
                 amountWithTax
             }
             lines {
@@ -72,8 +78,10 @@ export const GetActiveOrderForCheckoutQuery = graphql(`
                         }
                     }
                 }
+                unitPrice
                 unitPriceWithTax
                 quantity
+                linePrice
                 linePriceWithTax
             }
         }
@@ -87,6 +95,7 @@ export const GetEligibleShippingMethodsQuery = graphql(`
             name
             code
             description
+            price
             priceWithTax
         }
     }

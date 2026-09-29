@@ -29,6 +29,7 @@ interface ShippingMethod {
   name: string;
   code: string;
   description?: string | null;
+  price: number;
   priceWithTax: number;
 }
 

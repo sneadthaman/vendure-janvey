@@ -6,6 +6,7 @@ import {getActiveCurrencyCode} from "@/features/currency/currency-server";
 import {cacheLife, cacheTag} from "next/cache";
 import {query} from "@/platform/vendure/api";
 import {GetActiveOrderQuery} from '@/features/cart/graphql';
+import {getActiveNetsuiteAccount} from '@/features/b2b';
 
 export async function Cart() {
     "use cache: private"
@@ -14,11 +15,14 @@ export async function Cart() {
 
     const locale = await getRouteLocale();
     const currencyCode = await getActiveCurrencyCode();
-    const {data} = await query(GetActiveOrderQuery, {}, {
-        useAuthToken: true,
-        languageCode: locale,
-        currencyCode,
-    });
+    const [{data}, netsuiteAccount] = await Promise.all([
+        query(GetActiveOrderQuery, {}, {
+            useAuthToken: true,
+            languageCode: locale,
+            currencyCode,
+        }),
+        getActiveNetsuiteAccount(),
+    ]);
 
     const activeOrder = data.activeOrder;
 
@@ -27,11 +31,11 @@ export async function Cart() {
     }
 
     return (
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
             <CartItems activeOrder={activeOrder}/>
 
-            <div className="lg:col-span-1">
-                <OrderSummary activeOrder={activeOrder}/>
+            <div>
+                <OrderSummary activeOrder={activeOrder} netsuiteAccount={netsuiteAccount}/>
                 <PromotionCode activeOrder={activeOrder}/>
             </div>
         </div>

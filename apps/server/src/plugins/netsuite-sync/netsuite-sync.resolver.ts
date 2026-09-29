@@ -6,6 +6,7 @@ import { NetsuiteCustomerService } from './services/netsuite-customer.service';
 import {ID} from '@vendure/common/lib/shared-types';
 import {NetsuiteApprovalService} from './services/netsuite-approval.service';
 import {NetsuiteInvitationService} from './services/netsuite-invitation.service';
+import {NetsuiteOrderExportService} from './services/netsuite-order-export.service';
 
 export const netsuiteAdminSchema=gql`
     type NetsuiteSyncRun implements Node {
@@ -130,6 +131,22 @@ export const netsuiteAdminSchema=gql`
         decisionComment: String
         events: [AdminNetsuiteApprovalEvent!]!
     }
+    type NetsuiteOrderExport implements Node {
+        id: ID!
+        createdAt: DateTime!
+        updatedAt: DateTime!
+        order: Order!
+        externalId: String!
+        status: String!
+        attemptCount: Int!
+        netsuiteInternalId: String
+        netsuiteTransactionId: String
+        expectedTotalCents: Money
+        netsuiteTotalCents: Money
+        lastError: String
+        lastAttemptAt: DateTime
+        exportedAt: DateTime
+    }
     input LinkNetsuiteCustomerInput {
         customerId: ID!
         accountId: ID!
@@ -160,6 +177,8 @@ export const netsuiteAdminSchema=gql`
         findNetsuiteCustomers(query: String!): [NetsuiteCustomerCandidate!]!
         netsuiteApprovalOrders(status: String): [AdminNetsuiteOrderApproval!]!
         netsuiteOrderExportEligible(orderId: ID!): Boolean!
+        netsuiteOrderExports: [NetsuiteOrderExport!]!
+        netsuiteOrderExportConfiguration: JSON!
     }
     extend type Mutation {
         startNetsuiteSync(sampleSize: Int): NetsuiteSyncRun!
@@ -170,12 +189,13 @@ export const netsuiteAdminSchema=gql`
         unlinkNetsuiteCustomer(customerId: ID!): Boolean!
         inviteNetsuiteContact(input: InviteNetsuiteContactInput!): NetsuiteContactInvitation!
         resolveNetsuiteApprovalOrder(id: ID!, action: String!, comment: String): AdminNetsuiteOrderApproval!
+        retryNetsuiteOrderExport(id: ID!): NetsuiteOrderExport!
     }
 `;
 
 @Resolver()
 export class NetsuiteSyncResolver {
-    constructor(private sync:NetsuiteSyncService,private customers:NetsuiteCustomerService,private approvals:NetsuiteApprovalService,private invitations:NetsuiteInvitationService){}
+    constructor(private sync:NetsuiteSyncService,private customers:NetsuiteCustomerService,private approvals:NetsuiteApprovalService,private invitations:NetsuiteInvitationService,private orderExports:NetsuiteOrderExportService){}
     @Query()
     @Allow(Permission.SuperAdmin)
     netsuiteSyncRuns(@Ctx() ctx:RequestContext){return this.sync.list(ctx);}
@@ -224,4 +244,13 @@ export class NetsuiteSyncResolver {
     @Mutation()
     @Allow(Permission.SuperAdmin)
     resolveNetsuiteApprovalOrder(@Ctx() ctx:RequestContext,@Args('id') id:ID,@Args('action') action:'approve'|'reject'|'cancel',@Args('comment') comment?:string){return this.approvals.staffResolve(ctx,id,action,comment);}
+    @Query()
+    @Allow(Permission.SuperAdmin)
+    netsuiteOrderExports(@Ctx() ctx:RequestContext){return this.orderExports.list(ctx);}
+    @Query()
+    @Allow(Permission.SuperAdmin)
+    netsuiteOrderExportConfiguration(){return this.orderExports.configuration();}
+    @Mutation()
+    @Allow(Permission.SuperAdmin)
+    retryNetsuiteOrderExport(@Ctx() ctx:RequestContext,@Args('id') id:ID){return this.orderExports.retry(ctx,id);}
 }

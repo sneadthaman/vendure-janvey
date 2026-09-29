@@ -49,3 +49,14 @@ test('duplicate image names are rejected instead of choosing an arbitrary file',
     const file={name:'x_01.jpg',url:'https://example.app.netsuite.com/core/media/media.nl',internalid:'1'};
     await assert.rejects(client(async()=>({success:true,offset:0,limit:1000,count:2,total:2,files:[file,file]})).fetchImages(),/duplicate/);
 });
+test('sales-order export preserves dry-run mode and validates live transaction totals',async()=>{
+    const c=client(async(_,method,params,body)=>{
+        assert.equal(method,'POST');assert.equal(body.externalId,'VENDURE-ABC123');
+        return {success:true,contractVersion:1,dryRun:true,idempotent:false,internalId:null,transactionId:null,externalId:body.externalId,
+            subtotalCents:null,shippingCents:null,taxCents:null,totalCents:null};
+    });
+    const request={contractVersion:1,dryRun:true,externalId:'VENDURE-ABC123'};
+    assert.equal((await c.exportSalesOrder(request)).dryRun,true);
+    const invalid=client(async()=>({success:true,contractVersion:1,dryRun:false,idempotent:false,internalId:'44',transactionId:'SO1',externalId:'VENDURE-ABC123',subtotalCents:100,shippingCents:0,taxCents:null,totalCents:100}));
+    await assert.rejects(invalid.exportSalesOrder({...request,dryRun:false}),/Invalid NetSuite sales-order response/);
+});

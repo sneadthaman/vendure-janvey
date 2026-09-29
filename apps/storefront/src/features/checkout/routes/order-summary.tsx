@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { ChevronDown, ShoppingBag } from 'lucide-react';
+import { Building2, ChevronDown, ShieldCheck, ShoppingBag } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
@@ -12,6 +12,8 @@ import { Price } from '@/features/pricing/price';
 import {useTranslations} from 'next-intl';
 
 function OrderSummaryContent({ order, t }: { order: ReturnType<typeof useCheckout>['order']; t: ReturnType<typeof useTranslations<'Checkout'>> }) {
+  const taxTotal = order.taxSummary.reduce((total, taxLine) => total + taxLine.taxTotal, 0);
+
   return (
     <div className="space-y-4">
       <div className="space-y-3">
@@ -46,7 +48,7 @@ function OrderSummaryContent({ order, t }: { order: ReturnType<typeof useCheckou
               </p>
             </div>
             <div className="text-sm font-medium">
-              <Price value={line.linePriceWithTax} currencyCode={order.currencyCode} />
+              <Price value={line.linePrice} currencyCode={order.currencyCode} />
             </div>
           </div>
         ))}
@@ -58,7 +60,7 @@ function OrderSummaryContent({ order, t }: { order: ReturnType<typeof useCheckou
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">{t('subtotal')}</span>
           <span>
-            <Price value={order.subTotalWithTax} currencyCode={order.currencyCode} />
+            <Price value={order.subTotal} currencyCode={order.currencyCode} />
           </span>
         </div>
 
@@ -68,7 +70,7 @@ function OrderSummaryContent({ order, t }: { order: ReturnType<typeof useCheckou
               <div key={index} className="flex justify-between text-sm text-green-600">
                 <span>{discount.description}</span>
                 <span>
-                  <Price value={discount.amountWithTax} currencyCode={order.currencyCode} />
+                  <Price value={discount.amount} currencyCode={order.currencyCode} />
                 </span>
               </div>
             ))}
@@ -78,9 +80,17 @@ function OrderSummaryContent({ order, t }: { order: ReturnType<typeof useCheckou
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">{t('shipping')}</span>
           <span>
-            {order.shippingWithTax > 0
-              ? <Price value={order.shippingWithTax} currencyCode={order.currencyCode} />
+            {order.shipping > 0
+              ? <Price value={order.shipping} currencyCode={order.currencyCode} />
               : t('toBeCalculated')}
+          </span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-muted-foreground">{t('tax')}</span>
+          <span>
+            {order.shippingAddress
+              ? <Price value={taxTotal} currencyCode={order.currencyCode} />
+              : t('calculatedAfterAddress')}
           </span>
         </div>
       </div>
@@ -99,14 +109,14 @@ function OrderSummaryContent({ order, t }: { order: ReturnType<typeof useCheckou
 
 export default function OrderSummary() {
   const t = useTranslations('Checkout');
-  const { order } = useCheckout();
+  const { order, netsuiteAccount } = useCheckout();
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
       {/* Mobile: Collapsible summary */}
       <div className="lg:hidden">
-        <Card>
+        <Card className="overflow-hidden border-slate-200 shadow-sm">
           <Collapsible open={isOpen} onOpenChange={setIsOpen}>
             <CollapsibleTrigger className="w-full">
               <CardHeader className="cursor-pointer">
@@ -135,12 +145,28 @@ export default function OrderSummary() {
 
       {/* Desktop: Always visible sticky summary */}
       <div className="hidden lg:block">
-        <Card className="sticky top-24">
-          <CardHeader>
-            <CardTitle>{t('orderSummary')}</CardTitle>
+        <Card className="sticky top-24 overflow-hidden border-slate-200 shadow-sm">
+          <CardHeader className="bg-[#0d3158] text-white">
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-orange-200">{t('purchaseSummary')}</p>
+            <CardTitle className="text-xl">{t('orderSummary')}</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
+            {netsuiteAccount && (
+              <div className="mb-5 rounded-xl border border-blue-100 bg-blue-50 p-4">
+                <div className="flex items-start gap-3">
+                  <Building2 className="mt-0.5 size-5 shrink-0 text-[#174a78]"/>
+                  <div>
+                    <p className="font-semibold text-slate-950">{netsuiteAccount.companyName}</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-600">{t('accountPricingApplied')}</p>
+                  </div>
+                </div>
+              </div>
+            )}
             <OrderSummaryContent order={order} t={t} />
+            <div className="mt-5 flex items-start gap-2 rounded-lg bg-slate-50 p-3 text-xs leading-5 text-slate-600">
+              <ShieldCheck className="mt-0.5 size-4 shrink-0 text-emerald-600"/>
+              <span>{netsuiteAccount?.requiresApproval ? t('approvalSummary') : t('checkoutAssurance')}</span>
+            </div>
           </CardContent>
         </Card>
       </div>

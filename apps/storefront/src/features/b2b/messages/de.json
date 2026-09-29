@@ -1,9 +1,12 @@
 {
   "B2B": {
+    "eyebrow": "Geschäftseinkauf",
     "approvals": "Bestellfreigaben",
     "notLinkedTitle": "Geschäftskonto nicht verknüpft",
     "notLinkedBody": "Bitten Sie einen Mitarbeiter, Ihr Login mit dem richtigen NetSuite-Kundenkonto zu verknüpfen.",
     "submitted": "Bestellung #{code} wurde zur Freigabe eingereicht.",
+    "submittedTitle": "Ihre Anfrage wurde weitergeleitet",
+    "submittedNext": "Eine autorisierte Person kann jetzt Mengen, Preise, Steuer und den gewählten Lieferort prüfen.",
     "waitingForMe": "Wartet auf meine Freigabe",
     "nonePending": "Keine Bestellungen warten auf Ihre Freigabe.",
     "myRequests": "Meine Freigabeanfragen",

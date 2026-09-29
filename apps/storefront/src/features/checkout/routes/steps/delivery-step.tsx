@@ -76,9 +76,9 @@ export default function DeliveryStep({ onComplete }: DeliveryStepProps) {
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="font-semibold">
-                    {method.priceWithTax === 0
+                    {method.price === 0
                       ? t('free')
-                      : (method.priceWithTax / 100).toLocaleString(intlLocale, {
+                      : (method.price / 100).toLocaleString(intlLocale, {
                           style: 'currency',
                           currency: 'USD',
                         })}
@@ -96,7 +96,7 @@ export default function DeliveryStep({ onComplete }: DeliveryStepProps) {
         className="w-full"
       >
         {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        {t('continueToPayment')}
+        {t('continueToNextStep')}
       </Button>
     </div>
   );

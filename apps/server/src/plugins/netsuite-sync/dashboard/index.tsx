@@ -15,6 +15,8 @@ interface Approval {id:string;createdAt:string;status:string;order:{id:string;co
 interface Invitation {id:string;createdAt:string;emailAddress:string;netsuiteContactId:string;expiresAt:string;acceptedAt:string|null;revokedAt:string|null;account:{companyName:string};}
 interface LiveContact {internalId:string;entityId:string|null;firstName:string|null;lastName:string|null;emailAddress:string|null;active:boolean;}
 interface CustomerInspection {contacts:LiveContact[];}
+interface OrderExport {id:string;createdAt:string;status:string;attemptCount:number;externalId:string;netsuiteInternalId:string|null;netsuiteTransactionId:string|null;expectedTotalCents:number|null;netsuiteTotalCents:number|null;lastError:string|null;lastAttemptAt:string|null;exportedAt:string|null;order:{id:string;code:string;state:string;currencyCode:string;totalWithTax:number};}
+interface OrderExportConfiguration {mode:'disabled'|'dry-run'|'live';endpointConfigured:boolean;shippingMethodMapped:boolean;}
 const runsQuery=`query { netsuiteSyncRuns { id status createdAt sampleSize counts issues reconciliationPerformed } }`;
 const startMutation=`mutation StartNetsuiteSync($sampleSize:Int) { startNetsuiteSync(sampleSize:$sampleSize) { id } }`;
 const refreshCollectionsMutation=`mutation { refreshNetsuiteCollections }`;
@@ -28,6 +30,8 @@ const updateLinkMutation=`mutation Update($input:UpdateNetsuiteContactLinkInput!
 const unlinkCustomerMutation=`mutation Unlink($customerId:ID!){unlinkNetsuiteCustomer(customerId:$customerId)}`;
 const resolveApprovalMutation=`mutation Resolve($id:ID!,$action:String!,$comment:String){resolveNetsuiteApprovalOrder(id:$id,action:$action,comment:$comment){id status}}`;
 const inviteContactMutation=`mutation Invite($input:InviteNetsuiteContactInput!){inviteNetsuiteContact(input:$input){id}}`;
+const orderExportsQuery=`query { netsuiteOrderExports { id createdAt status attemptCount externalId netsuiteInternalId netsuiteTransactionId expectedTotalCents netsuiteTotalCents lastError lastAttemptAt exportedAt order { id code state currencyCode totalWithTax } } netsuiteOrderExportConfiguration }`;
+const retryOrderExportMutation=`mutation RetryOrderExport($id:ID!){retryNetsuiteOrderExport(id:$id){id status}}`;
 
 function NetsuiteCatalogPage(){
     const [runs,setRuns]=useState<Run[]>([]);
@@ -120,10 +124,27 @@ function NetsuiteCustomersPage(){
         <section className="mt-8"><h2 className="text-lg font-semibold">Recent customer sync reports</h2>{runs.map(run=><details key={run.id} className="rounded border p-3 my-2"><summary>{run.netsuiteCustomerId} · {run.status} · {new Date(run.createdAt).toLocaleString()}</summary><pre className="text-xs">{JSON.stringify({counts:run.counts,issues:run.issues},null,2)}</pre></details>)}</section>
     </PageBlock></PageLayout></Page>;
 }
+
+function NetsuiteOrderExportsPage(){
+    const [exports,setExports]=useState<OrderExport[]>([]);const [configuration,setConfiguration]=useState<OrderExportConfiguration|null>(null);
+    const [error,setError]=useState('');const [busyId,setBusyId]=useState<string|null>(null);
+    const refresh=useCallback(async()=>{try{const result=await api.query<{netsuiteOrderExports:OrderExport[];netsuiteOrderExportConfiguration:OrderExportConfiguration}>(orderExportsQuery);setExports(result.netsuiteOrderExports);setConfiguration(result.netsuiteOrderExportConfiguration);setError('');}catch(e){setError(message(e));}},[]);
+    useEffect(()=>{void refresh();const interval=setInterval(()=>void refresh(),5000);return()=>clearInterval(interval);},[refresh]);
+    async function retry(id:string){setBusyId(id);setError('');try{await api.mutate(retryOrderExportMutation,{id});await refresh();}catch(e){setError(message(e));}finally{setBusyId(null);}}
+    const canRetry=(item:OrderExport)=>configuration?.endpointConfigured&&['pending','failed','validated'].includes(item.status);
+    return <Page pageId="netsuite-order-exports"><PageTitle>NetSuite order exports</PageTitle><PageLayout><PageBlock column="main" blockId="netsuite-order-export-list">
+        <p className="mb-3">Completed direct purchases and approved account orders are captured here. The Sales Order RESTlet uses <code>VENDURE-&lt;order code&gt;</code> as its idempotency key.</p>
+        {configuration&&<div className="mb-4 rounded border p-3"><strong>Mode: {configuration.mode}</strong><span> · RESTlet {configuration.endpointConfigured?'ready':'not active'} · Shipping method {configuration.shippingMethodMapped?'mapped':'not mapped'}</span>{configuration.mode==='disabled'&&<p className="mt-1 text-sm">Eligible orders are recorded locally, but no request is sent to NetSuite.</p>}{configuration.mode==='dry-run'&&<p className="mt-1 text-sm">NetSuite validates customer, address, item, and shipping references without creating a Sales Order.</p>}</div>}
+        {error&&<p role="alert" className="mb-4 text-destructive">{error}</p>}
+        <div className="space-y-3">{exports.map(item=><article key={item.id} className="rounded border p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-semibold">Order #{item.order.code} · {item.status.replace(/_/g,' ')}</h2><p className="text-sm">{new Date(item.createdAt).toLocaleString()} · {item.externalId} · Attempts: {item.attemptCount}</p><p className="text-sm">Vendure total: {money(item.expectedTotalCents??item.order.totalWithTax,item.order.currencyCode)}{item.netsuiteTotalCents!==null?` · NetSuite total: ${money(item.netsuiteTotalCents,item.order.currencyCode)}`:''}</p>{item.netsuiteTransactionId&&<p className="text-sm">NetSuite transaction: {item.netsuiteTransactionId} · Internal ID {item.netsuiteInternalId}</p>}{item.lastError&&<p className="mt-2 text-sm text-destructive">{item.lastError}</p>}</div><Button variant="outline" disabled={!canRetry(item)||busyId===item.id} onClick={()=>void retry(item.id)}>{busyId===item.id?'Queuing...':'Retry'}</Button></div></article>)}{exports.length===0&&<p>No eligible orders have been captured yet.</p>}</div>
+    </PageBlock></PageLayout></Page>;
+}
 function message(error:unknown){return error instanceof Error?error.message:'NetSuite customer operation failed.';}
 function contactLabel(contact:LiveContact){return [contact.firstName,contact.lastName].filter(Boolean).join(' ')||contact.entityId||`Contact ${contact.internalId}`;}
+function money(value:number,currency:string){return (value/100).toLocaleString(undefined,{style:'currency',currency});}
 
 defineDashboardExtension({routes:[
     {path:'/netsuite-sync',loader:()=>({breadcrumb:'NetSuite sync'}),navMenuItem:{id:'netsuite-sync',title:'NetSuite sync',sectionId:'catalog',requiresPermission:'SuperAdmin'},component:NetsuiteCatalogPage},
     {path:'/netsuite-customers',loader:()=>({breadcrumb:'NetSuite customers'}),navMenuItem:{id:'netsuite-customers',title:'NetSuite customers',sectionId:'customers',requiresPermission:'SuperAdmin'},component:NetsuiteCustomersPage},
+    {path:'/netsuite-order-exports',loader:()=>({breadcrumb:'NetSuite order exports'}),navMenuItem:{id:'netsuite-order-exports',title:'NetSuite order exports',sectionId:'sales',requiresPermission:'SuperAdmin'},component:NetsuiteOrderExportsPage},
 ]});

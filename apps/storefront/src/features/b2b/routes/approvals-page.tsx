@@ -6,6 +6,7 @@ import {Input} from '@/components/ui/input';
 import {Card,CardContent,CardHeader,CardTitle} from '@/components/ui/card';
 import {getActiveNetsuiteAccount,getApprovalOrders} from '../data';
 import {modifyApproval,resolveApproval} from '../actions';
+import {Building2, CircleCheckBig} from 'lucide-react';
 
 // Approval data is session-bound and must be rendered at request time.
 export const instant=false;
@@ -22,8 +23,8 @@ async function ApprovalOrdersContent({searchParams}:Pick<PageProps<'/[locale]/ac
     const params=await searchParams;
     const submitted=Array.isArray(params.submitted)?params.submitted[0]:params.submitted;
     return <div className="space-y-8">
-        <div><h1 className="text-3xl font-bold">{t('approvals')}</h1><p className="text-muted-foreground">{account.companyName}</p></div>
-        {submitted&&<p role="status" className="rounded-md border border-green-600 bg-green-50 p-3 text-green-900">{t('submitted',{code:submitted})}</p>}
+        <div><p className="mb-2 text-sm font-bold uppercase tracking-[0.16em] text-[#bc520e]">{t('eyebrow')}</p><h1 className="text-3xl font-bold tracking-tight text-slate-950">{t('approvals')}</h1><p className="mt-2 flex items-center gap-2 text-slate-600"><Building2 className="size-4 text-[#174a78]"/>{account.companyName}</p></div>
+        {submitted&&<div role="status" className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-950 shadow-sm"><div className="flex items-start gap-3"><CircleCheckBig className="mt-0.5 size-6 shrink-0 text-emerald-700"/><div><p className="font-bold">{t('submittedTitle')}</p><p className="mt-1 text-sm">{t('submitted',{code:submitted})}</p><p className="mt-2 text-sm text-emerald-800">{t('submittedNext')}</p></div></div></div>}
         {account.canApproveOrders&&<section className="space-y-4">
             <h2 className="text-xl font-semibold">{t('waitingForMe')}</h2>
             {pending.length===0?<p className="text-muted-foreground">{t('nonePending')}</p>:pending.map(approval=><Card key={approval.id}>

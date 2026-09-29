@@ -7,12 +7,13 @@ import {IsNull} from 'typeorm';
 import {NetsuiteAccount,NetsuiteAccountAddress,NetsuiteContactInvitation,NetsuiteContactLink} from '../entities';
 import {NetsuiteContactInvitationEvent} from '../netsuite-invitation.event';
 import {NetsuiteService} from './netsuite.service';
+import {NetsuiteActiveOrderPricingService} from './netsuite-active-order-pricing.service';
 
 interface InviteInput {accountId:ID;netsuiteContactId:string;requiresApproval?:boolean;canApproveOrders?:boolean;defaultShippingAddressId?:ID|null;}
 
 @Injectable()
 export class NetsuiteInvitationService {
-    constructor(private connection:TransactionalConnection,private client:NetsuiteService,private eventBus:EventBus){}
+    constructor(private connection:TransactionalConnection,private client:NetsuiteService,private eventBus:EventBus,private activeOrderPricing:NetsuiteActiveOrderPricingService){}
 
     list(ctx:RequestContext){return this.connection.getRepository(ctx,NetsuiteContactInvitation).find({relations:{account:true,defaultShippingAddress:true,acceptedByCustomer:true},order:{createdAt:'DESC'},take:100});}
 
@@ -72,6 +73,8 @@ export class NetsuiteInvitationService {
             }));
             invitation.acceptedAt=new Date();invitation.acceptedByCustomerId=customer.id;
             await this.connection.getRepository(tx,NetsuiteContactInvitation).save(invitation);
+            const activeOrder=await this.activeOrderPricing.repriceForUser(tx,tx.activeUserId!);
+            if(activeOrder&&String(activeOrder.customerId)!==String(customer.id))throw new Error('The active order does not belong to the invited customer.');
             return {accountName:invitation.account.companyName};
         });
     }

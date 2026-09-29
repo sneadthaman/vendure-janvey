@@ -1,9 +1,12 @@
 {
   "B2B": {
+    "eyebrow": "Business purchasing",
     "approvals": "Order approvals",
     "notLinkedTitle": "Business account not linked",
     "notLinkedBody": "Ask a staff member to link your login to the correct NetSuite customer account.",
     "submitted": "Order #{code} was submitted for approval.",
+    "submittedTitle": "Your request is on its way",
+    "submittedNext": "An authorized approver can now review quantities, pricing, tax, and the selected delivery location.",
     "waitingForMe": "Waiting for my approval",
     "nonePending": "No orders are waiting for your approval.",
     "myRequests": "My approval requests",

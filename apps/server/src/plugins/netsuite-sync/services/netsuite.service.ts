@@ -5,11 +5,15 @@ import crypto from 'crypto-js';
 import { lstat, readdir, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import { NETSUITE_SYNC_PLUGIN_OPTIONS } from '../constants';
-import { NetsuiteWebStoreItem, NetsuiteWebStoreItemsResponse, NetsuitePricesResponse, NetsuitePrice, NetsuiteImagesResponse, NetsuiteImageFile, PluginInitOptions, NetsuiteCustomerResponse, NetsuiteCustomerCandidate, NetsuiteCustomerSearchResponse } from '../types';
+import { NetsuiteWebStoreItem, NetsuiteWebStoreItemsResponse, NetsuitePricesResponse, NetsuitePrice, NetsuiteImagesResponse, NetsuiteImageFile, PluginInitOptions, NetsuiteCustomerResponse, NetsuiteCustomerCandidate, NetsuiteCustomerSearchResponse, NetsuiteSalesOrderRequest, NetsuiteSalesOrderResponse } from '../types';
 
 @Injectable()
 export class NetsuiteService {
     constructor(@Inject(NETSUITE_SYNC_PLUGIN_OPTIONS) private readonly options: PluginInitOptions) {}
+
+    get orderExportConfigured(){return Boolean(this.options.ordersUrl)&&this.orderExportMode!=='disabled';}
+    get orderExportMode(){return this.options.orderExportMode??'disabled';}
+    get shippingMethodInternalId(){return this.options.shippingMethodInternalId?.trim()||null;}
 
     private async request<T>(endpoint: string | undefined, method: 'GET' | 'POST', params?: Record<string,string>, body?: unknown): Promise<T> {
         const {accountId,consumerKey,consumerSecret,tokenId,tokenSecret}=this.options;
@@ -96,6 +100,17 @@ export class NetsuiteService {
         const result=await this.request<NetsuiteCustomerSearchResponse>(this.options.customersUrl,'GET',{query:normalized});
         if(result.success!==true||result.contractVersion!==1||!Array.isArray(result.candidates)||result.candidates.length>25||result.candidates.some(candidate=>!candidate||!/^\d+$/.test(candidate.internalId)||typeof candidate.active!=='boolean'))throw new Error('Invalid NetSuite customer search response.');
         return result.candidates;
+    }
+
+    async exportSalesOrder(payload:NetsuiteSalesOrderRequest):Promise<NetsuiteSalesOrderResponse>{
+        const result=await this.request<NetsuiteSalesOrderResponse>(this.options.ordersUrl,'POST',undefined,payload);
+        const cents=[result.subtotalCents,result.shippingCents,result.taxCents,result.totalCents];
+        if(result.success!==true||result.contractVersion!==1||result.externalId!==payload.externalId||result.dryRun!==payload.dryRun||
+            typeof result.idempotent!=='boolean'||cents.some(value=>value!==null&&(!Number.isSafeInteger(value)||value<0))||
+            (!payload.dryRun&&(!result.internalId||!/^\d+$/.test(result.internalId)||cents.some(value=>value===null)))){
+            throw new Error('Invalid NetSuite sales-order response.');
+        }
+        return result;
     }
 
     async fetchImages(): Promise<Map<string,NetsuiteImageFile>> {

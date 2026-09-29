@@ -1,6 +1,6 @@
 import { Link } from '@/platform/i18n/navigation';
 import {Button} from '@/components/ui/button';
-import {Lock} from 'lucide-react';
+import {Building2, CheckCircle2, Lock} from 'lucide-react';
 import {Price} from '@/features/pricing/price';
 import {getTranslations} from 'next-intl/server';
 
@@ -16,11 +16,34 @@ type ActiveOrder = {
     }> | null;
 };
 
-export async function OrderSummary({activeOrder}: { activeOrder: ActiveOrder }) {
+type NetsuiteAccount = {
+    companyName: string;
+    requiresApproval: boolean;
+} | null;
+
+export async function OrderSummary({activeOrder, netsuiteAccount}: { activeOrder: ActiveOrder; netsuiteAccount: NetsuiteAccount }) {
     const t = await getTranslations('Cart');
     return (
-        <div className="border rounded-xl p-6 bg-card sticky top-24 shadow-sm">
-            <h2 className="text-xl font-bold mb-4">{t('orderSummary')}</h2>
+        <div className="sticky top-24 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="bg-[#0d3158] px-6 py-5 text-white">
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-orange-200">{t('purchaseSummary')}</p>
+                <h2 className="mt-1 text-xl font-bold">{t('orderSummary')}</h2>
+            </div>
+
+            <div className="p-6">
+            {netsuiteAccount && (
+                <div className="mb-5 rounded-xl border border-blue-100 bg-blue-50 p-4">
+                    <div className="flex items-start gap-3">
+                        <Building2 className="mt-0.5 size-5 shrink-0 text-[#174a78]"/>
+                        <div>
+                            <p className="font-semibold text-slate-950">{netsuiteAccount.companyName}</p>
+                            <p className="mt-1 text-sm leading-5 text-slate-600">
+                                {netsuiteAccount.requiresApproval ? t('approvalRequired') : t('accountReady')}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="space-y-2 mb-4">
                 <div className="flex justify-between text-sm">
@@ -51,18 +74,21 @@ export async function OrderSummary({activeOrder}: { activeOrder: ActiveOrder }) 
                 </div>
             </div>
 
-            <div className="border-t pt-4 mb-6">
+            <div className="mb-4 border-t pt-4">
                 <div className="flex justify-between items-baseline text-lg font-bold">
-                    <span>{t('total')}</span>
+                    <span>{t('estimatedTotal')}</span>
                     <span className="text-2xl">
                         <Price value={activeOrder.total} currencyCode={activeOrder.currencyCode}/>
                     </span>
                 </div>
             </div>
 
-            <p className="text-xs text-muted-foreground mb-4">{t('taxCalculatedAtCheckout')}</p>
+            <div className="mb-5 flex items-start gap-2 rounded-lg bg-slate-50 p-3 text-xs leading-5 text-slate-600">
+                <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600"/>
+                <span>{t('taxCalculatedAtCheckout')}</span>
+            </div>
 
-            <Button render={<Link href="/checkout" />} nativeButton={false} className="w-full" size="lg">{t('proceedToCheckout')}</Button>
+            <Button render={<Link href="/checkout" />} nativeButton={false} className="h-12 w-full bg-[#bc520e] text-base font-semibold hover:bg-[#9f430a]" size="lg">{t('proceedToCheckout')}</Button>
 
             <div className="flex items-center justify-center gap-1.5 mt-3 text-xs text-muted-foreground">
                 <Lock className="h-3 w-3" />
@@ -70,6 +96,7 @@ export async function OrderSummary({activeOrder}: { activeOrder: ActiveOrder }) 
             </div>
 
             <Button render={<Link href="/" />} nativeButton={false} variant="outline" className="w-full mt-3">{t('continueShopping')}</Button>
+            </div>
         </div>
     );
 }

@@ -119,9 +119,9 @@ export default function ReviewStep({ onEditStep }: ReviewStepProps) {
               <div>
                 <p className="font-medium">{order.shippingLines[0].shippingMethod.name}</p>
                 <p className="text-muted-foreground">
-                  {order.shippingLines[0].priceWithTax === 0
+                  {order.shipping === 0
                     ? t('free')
-                    : <Price value={order.shippingLines[0].priceWithTax} currencyCode={order.currencyCode} />}
+                    : <Price value={order.shipping} currencyCode={order.currencyCode} />}
                 </p>
               </div>
               <Button

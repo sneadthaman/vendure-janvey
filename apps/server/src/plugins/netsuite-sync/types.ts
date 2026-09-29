@@ -126,7 +126,53 @@ export interface PluginInitOptions {
   pricingUrl?: string;
   imagesUrl?: string;
   customersUrl?: string;
+  ordersUrl?: string;
+  orderExportMode?: 'disabled'|'dry-run'|'live';
+  shippingMethodInternalId?: string;
   localImagesPath?: string;
+}
+
+export interface NetsuiteSalesOrderLine {
+  itemInternalId:string;
+  sku:string;
+  quantity:number;
+  rateCents:number;
+  amountCents:number;
+}
+
+export interface NetsuiteSalesOrderRequest {
+  contractVersion:1;
+  dryRun:boolean;
+  externalId:string;
+  vendureOrderCode:string;
+  customerInternalId:string;
+  contactInternalId:string|null;
+  shippingAddressInternalId:string;
+  billingAddressInternalId:string;
+  currencyCode:'USD';
+  memo:string;
+  customerPurchaseOrder:string|null;
+  shippingMethodInternalId:string|null;
+  shippingCents:number;
+  expectedSubtotalCents:number;
+  expectedTaxCents:number;
+  expectedTotalCents:number;
+  lines:NetsuiteSalesOrderLine[];
+}
+
+export interface NetsuiteSalesOrderResponse {
+  success:boolean;
+  contractVersion:1;
+  dryRun:boolean;
+  idempotent:boolean;
+  internalId:string|null;
+  transactionId:string|null;
+  externalId:string;
+  subtotalCents:number|null;
+  shippingCents:number|null;
+  taxCents:number|null;
+  totalCents:number|null;
+  remainingUsage?:number;
 }
 
 export interface NetsuiteCustomerAddress {

@@ -5,3 +5,4 @@ export {NetsuiteContactInvitation} from './netsuite-contact-invitation.entity';
 export {NetsuiteCustomerSyncRun} from './netsuite-customer-sync-run.entity';
 export {NetsuiteOrderApproval} from './netsuite-order-approval.entity';
 export {NetsuiteOrderApprovalEvent} from './netsuite-order-approval-event.entity';
+export {NetsuiteOrderExport} from './netsuite-order-export.entity';
