@@ -190,6 +190,7 @@ export const netsuiteAdminSchema=gql`
         inviteNetsuiteContact(input: InviteNetsuiteContactInput!): NetsuiteContactInvitation!
         resolveNetsuiteApprovalOrder(id: ID!, action: String!, comment: String): AdminNetsuiteOrderApproval!
         retryNetsuiteOrderExport(id: ID!): NetsuiteOrderExport!
+        reconcileNetsuiteOrderExport(orderId: ID!): NetsuiteOrderExport!
     }
 `;
 
@@ -253,4 +254,7 @@ export class NetsuiteSyncResolver {
     @Mutation()
     @Allow(Permission.SuperAdmin)
     retryNetsuiteOrderExport(@Ctx() ctx:RequestContext,@Args('id') id:ID){return this.orderExports.retry(ctx,id);}
+    @Mutation()
+    @Allow(Permission.SuperAdmin)
+    reconcileNetsuiteOrderExport(@Ctx() ctx:RequestContext,@Args('orderId') orderId:ID){return this.orderExports.reconcile(ctx,orderId);}
 }

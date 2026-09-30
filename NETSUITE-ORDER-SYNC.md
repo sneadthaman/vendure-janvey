@@ -4,7 +4,7 @@
 
 Vendure captures an order for export only after its final business decision:
 
-- a direct-purchase order enters `PaymentSettled`; or
+- a direct-purchase order enters `PaymentAuthorized` or `PaymentSettled`; or
 - an approval order enters `Approved` after final customer pricing and tax validation.
 
 Submitting an order to `PendingApproval` does not export it. Rejected and cancelled orders do not export.
@@ -21,7 +21,7 @@ The export payload uses immutable IDs already maintained by the integration:
 
 Discounted lines and order surcharges currently fail closed because no matching NetSuite mapping has been approved. NetSuite calculates tax when it saves the Sales Order. Vendure stores both totals and marks the export `exported_with_mismatch` if NetSuite's total differs.
 
-Staff can view and retry incomplete exports at **Sales > NetSuite order exports** in the Vendure Dashboard.
+Staff can view and retry incomplete exports at **Sales > NetSuite order exports** in the Vendure Dashboard. The SuperAdmin-only `reconcileNetsuiteOrderExport(orderId: ID!)` mutation captures and queues an eligible completed order that predates the listener or was missed during an outage.
 
 ## Safety modes
 

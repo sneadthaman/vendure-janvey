@@ -9,6 +9,7 @@ import {NetsuiteSalesOrderRequest} from '../types';
 import {NetsuiteService} from './netsuite.service';
 
 const loggerCtx='NetsuiteOrderExport';
+const directExportStates:ReadonlyArray<Order['state']>=['PaymentAuthorized','PaymentSettled'];
 type ExportJob={exportId:string;context:ReturnType<RequestContext['serialize']>};
 
 @Injectable()
@@ -35,7 +36,7 @@ export class NetsuiteOrderExportService implements OnModuleInit,OnModuleDestroy 
                 handler:event=>this.captureLedger(event.ctx,event.order,event.toState),
             });
             this.subscription=this.eventBus.ofType(OrderStateTransitionEvent).subscribe({next:event=>{
-                if(event.toState!=='PaymentSettled'&&event.toState!=='Approved')return;
+                if(!directExportStates.includes(event.toState)&&event.toState!=='Approved')return;
                 void this.enqueueCaptured(event.ctx,event.order.id).catch(error=>Logger.error(this.message(error),loggerCtx));
             }});
             if(this.client.orderExportConfigured)await this.resumeIncomplete();
@@ -62,10 +63,18 @@ export class NetsuiteOrderExportService implements OnModuleInit,OnModuleDestroy 
         return record;
     }
 
+    async reconcile(ctx:RequestContext,orderId:ID){
+        const order=await this.orders.findOne(ctx,orderId,[...this.orderRelations]);
+        if(!order||(!directExportStates.includes(order.state)&&order.state!=='Approved'))throw new Error('Order is not in an exportable state.');
+        await this.captureLedger(ctx,order,order.state);
+        await this.enqueueCaptured(ctx,order.id);
+        return this.connection.getRepository(ctx,NetsuiteOrderExport).findOneOrFail({where:{orderId:order.id},relations:{order:true}});
+    }
+
     private async captureLedger(ctx:RequestContext,order:Order,toState:Order['state']){
-        if(toState!=='PaymentSettled'&&toState!=='Approved')return;
+        if(!directExportStates.includes(toState)&&toState!=='Approved')return;
         const approval=await this.connection.getRepository(ctx,NetsuiteOrderApproval).findOneBy({orderId:order.id});
-        if(toState==='PaymentSettled'&&approval)return;
+        if(directExportStates.includes(toState)&&approval)return;
         if(toState==='Approved'&&!approval)throw new Error('An approved order has no approval audit record.');
         const repo=this.connection.getRepository(ctx,NetsuiteOrderExport);
         let record=await repo.findOneBy({orderId:order.id});
@@ -137,7 +146,7 @@ export class NetsuiteOrderExportService implements OnModuleInit,OnModuleDestroy 
         const order=await this.orders.findOne(ctx,orderId,[...this.orderRelations]);
         if(!order||!order.customerId)throw new Error('A completed order with a linked customer is required for NetSuite export.');
         if(order.currencyCode!==CurrencyCode.USD)throw new Error('NetSuite order export currently supports USD only.');
-        if(!['PaymentSettled','Approved'].includes(order.state))throw new Error('Order is not in an exportable state.');
+        if(!directExportStates.includes(order.state)&&order.state!=='Approved')throw new Error('Order is not in an exportable state.');
         if(order.surcharges?.length)throw new Error('Order surcharges are not supported by the NetSuite Sales Order contract.');
         const link=await this.connection.getRepository(ctx,NetsuiteContactLink).findOne({
             where:{customerId:order.customerId,active:true},relations:{account:true,defaultShippingAddress:true},
