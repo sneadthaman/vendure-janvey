@@ -5,6 +5,7 @@ import {VerifyCustomerAccountMutation} from '@/features/authentication/graphql';
 import {setAuthToken} from '@/platform/vendure/auth-token';
 import {getTranslations} from 'next-intl/server';
 import {updateTag} from 'next/cache';
+import {consumePostVerificationRedirect} from '../../post-verification-redirect';
 
 export async function verifyAccountAction(token: string, password?: string) {
     const t = await getTranslations('Errors');
@@ -33,7 +34,7 @@ export async function verifyAccountAction(token: string, password?: string) {
         updateTag('cart');
         updateTag('active-order');
 
-        return {success: true};
+        return {success: true,redirectTo:await consumePostVerificationRedirect()};
     } catch {
         return {error: t('unexpectedError')};
     }

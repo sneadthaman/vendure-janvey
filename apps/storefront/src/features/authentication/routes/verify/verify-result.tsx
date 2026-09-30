@@ -6,7 +6,7 @@ import { Link } from '@/platform/i18n/navigation';
 import {CheckCircle, XCircle} from 'lucide-react';
 import {useTranslations} from 'next-intl';
 
-export type VerifyResultValue = {success: boolean; error?: undefined} | {error: string; success?: undefined};
+export type VerifyResultValue = {success: boolean; redirectTo?:string; error?: undefined} | {error: string; success?: undefined; redirectTo?:undefined};
 
 interface VerifyResultProps {
     result: VerifyResultValue;
@@ -31,9 +31,9 @@ export function VerifyResult({result}: VerifyResultProps) {
                                 {t('accountVerifiedMessage')}
                             </p>
                         </div>
-                        <Link href="/sign-in" className="block">
+                        <Link href={result.redirectTo||'/'} className="block">
                             <Button className="w-full">
-                                {t('backToSignIn')}
+                                {t('continue')}
                             </Button>
                         </Link>
                     </>

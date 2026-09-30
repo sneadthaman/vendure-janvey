@@ -3,7 +3,7 @@ import {ID} from '@vendure/common/lib/shared-types';
 import {ActiveOrderService, EventBus, Order, OrderService, RequestContext, TransactionalConnection} from '@vendure/core';
 
 import {NetsuiteAccountAddress,NetsuiteContactLink,NetsuiteOrderApproval,NetsuiteOrderApprovalEvent} from '../entities';
-import {NetsuiteApprovalDecisionEvent,NetsuiteApprovalRequestedEvent} from '../netsuite-approval.events';
+import {NetsuiteApprovalDecisionEvent,NetsuiteApprovalRequestedEvent,NetsuiteApprovalSubmittedEvent} from '../netsuite-approval.events';
 import {withAuthorizedOrderTransition} from '../netsuite-order-process';
 import {assertApprovalAccount,assertCanDecideApproval,assertCanViewApproval} from '../b2b-policy';
 import {NetsuiteCustomerService} from './netsuite-customer.service';
@@ -73,6 +73,9 @@ export class NetsuiteApprovalService {
             }));
             await this.audit(tx,approval,link,'submitted',null,{shippingAddressId:String(address.id)},verified);
             await this.notifyApprovers(tx,link,verified);
+            await this.eventBus.publish(new NetsuiteApprovalSubmittedEvent(
+                tx,link.customer.emailAddress,verified,link.account.companyName,
+            ));
             return this.getForContact(tx,approval.id,link);
         });
     }

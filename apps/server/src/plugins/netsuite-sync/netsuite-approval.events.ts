@@ -10,6 +10,15 @@ export class NetsuiteApprovalRequestedEvent extends VendureEvent {
     ){super();}
 }
 
+export class NetsuiteApprovalSubmittedEvent extends VendureEvent {
+    constructor(
+        public ctx:RequestContext,
+        public recipient:string,
+        public order:Order,
+        public accountName:string,
+    ){super();}
+}
+
 export class NetsuiteApprovalDecisionEvent extends VendureEvent {
     constructor(
         public ctx:RequestContext,

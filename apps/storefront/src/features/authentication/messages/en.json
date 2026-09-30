@@ -55,6 +55,7 @@
     "invalidLinkMessage": "The verification link is invalid or missing a token.",
     "createNewAccount": "Create New Account",
     "backToSignIn": "Back to Sign In",
+    "continue": "Continue",
     "accountVerified": "Account Verified!",
     "accountVerifiedMessage": "Your email has been successfully verified. You can now sign in to your account.",
     "verificationFailed": "Verification Failed",

@@ -7,12 +7,13 @@ import {
 } from '@vendure/core';
 import {
     defaultEmailHandlers,
+    orderConfirmationHandler,
     EmailPlugin,
     FileBasedTemplateLoader,
     type EmailPluginDevModeOptions,
     type EmailPluginOptions,
 } from '@vendure/email-plugin';
-import { netsuiteEmailHandlers } from './plugins/netsuite-sync/netsuite-email-handlers';
+import { janveyOrderConfirmationHandler, netsuiteEmailHandlers } from './plugins/netsuite-sync/netsuite-email-handlers';
 import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import { DashboardPlugin } from '@vendure/dashboard/plugin';
 import { GraphiqlPlugin } from '@vendure/graphiql-plugin';
@@ -42,7 +43,7 @@ if(emailTransport!=='file'&&emailTransport!=='microsoft-graph'){
 }
 
 const emailCommonOptions = {
-    handlers: [...defaultEmailHandlers, ...netsuiteEmailHandlers],
+    handlers: [...defaultEmailHandlers.filter(handler=>handler!==orderConfirmationHandler),janveyOrderConfirmationHandler,...netsuiteEmailHandlers],
     templateLoader: new FileBasedTemplateLoader(path.join(__dirname, '../static/email/templates')),
     globalTemplateVars: {
         fromAddress: emailTransport==='file'

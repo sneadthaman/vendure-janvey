@@ -4,6 +4,7 @@ import {mutate} from '@/platform/vendure/api';
 import {RegisterCustomerAccountMutation} from '@/features/authentication/graphql';
 import {redirect} from '@/platform/i18n/navigation';
 import {getLocale, getTranslations} from 'next-intl/server';
+import {rememberPostVerificationRedirect, safeInternalRedirect} from '../../post-verification-redirect';
 
 export async function registerAction(prevState: { error?: string } | undefined, formData: FormData) {
     const t = await getTranslations('Errors');
@@ -36,8 +37,10 @@ export async function registerAction(prevState: { error?: string } | undefined, 
     }
 
     // Redirect to verification pending page, preserving redirectTo if present
-    const verifyUrl = redirectTo
-        ? `/verify-pending?redirectTo=${encodeURIComponent(redirectTo)}`
+    const safeRedirect=safeInternalRedirect(redirectTo);
+    await rememberPostVerificationRedirect(safeRedirect);
+    const verifyUrl = safeRedirect
+        ? `/verify-pending?redirectTo=${encodeURIComponent(safeRedirect)}`
         : '/verify-pending';
 
     const locale = await getLocale();

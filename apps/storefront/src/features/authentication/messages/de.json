@@ -55,6 +55,7 @@
     "invalidLinkMessage": "Der Bestätigungslink ist ungültig oder es fehlt ein Token.",
     "createNewAccount": "Neues Konto erstellen",
     "backToSignIn": "Zurück zur Anmeldung",
+    "continue": "Weiter",
     "accountVerified": "Konto bestätigt!",
     "accountVerifiedMessage": "Ihre E-Mail-Adresse wurde erfolgreich bestätigt. Sie können sich jetzt in Ihr Konto einloggen.",
     "verificationFailed": "Bestätigung fehlgeschlagen",

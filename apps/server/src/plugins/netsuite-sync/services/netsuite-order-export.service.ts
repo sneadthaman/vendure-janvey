@@ -74,7 +74,13 @@ export class NetsuiteOrderExportService implements OnModuleInit,OnModuleDestroy 
     private async captureLedger(ctx:RequestContext,order:Order,toState:Order['state']){
         if(!directExportStates.includes(toState)&&toState!=='Approved')return;
         const approval=await this.connection.getRepository(ctx,NetsuiteOrderApproval).findOneBy({orderId:order.id});
-        if(directExportStates.includes(toState)&&approval)return;
+        if(directExportStates.includes(toState)){
+            if(approval||!order.customerId)return;
+            const link=await this.connection.getRepository(ctx,NetsuiteContactLink).findOne({
+                where:{customerId:order.customerId,active:true},relations:{account:true},
+            });
+            if(!link||link.requiresApproval||!link.account.active||!link.account.webCustomer)return;
+        }
         if(toState==='Approved'&&!approval)throw new Error('An approved order has no approval audit record.');
         const repo=this.connection.getRepository(ctx,NetsuiteOrderExport);
         let record=await repo.findOneBy({orderId:order.id});
@@ -96,7 +102,7 @@ export class NetsuiteOrderExportService implements OnModuleInit,OnModuleDestroy 
     private async enqueueCaptured(ctx:RequestContext,orderId:ID){
         if(!this.client.orderExportConfigured)return;
         const record=await this.connection.getRepository(ctx,NetsuiteOrderExport).findOneBy({orderId});
-        if(!record)throw new Error(`Order ${orderId} completed without an export ledger record.`);
+        if(!record)return;
         await this.enqueue(record,ctx.serialize());
     }
 
@@ -153,6 +159,7 @@ export class NetsuiteOrderExportService implements OnModuleInit,OnModuleDestroy 
         });
         if(!link||!link.account.active||!link.account.webCustomer)throw new Error('The order customer is not linked to an eligible NetSuite account.');
         const approval=await this.connection.getRepository(ctx,NetsuiteOrderApproval).findOne({where:{orderId},relations:{shippingAddress:true}});
+        if(directExportStates.includes(order.state)&&link.requiresApproval)throw new Error('An approval-required contact cannot export a direct-payment order.');
         if(approval&&(approval.status!=='approved'||!approval.pricingVerifiedAt||!approval.taxValidatedAt))throw new Error('Approval order has not passed final pricing and tax validation.');
         const shippingAddress=approval?.shippingAddress??link.defaultShippingAddress;
         if(!shippingAddress?.active)throw new Error('The order has no active authoritative NetSuite ship-to address.');
