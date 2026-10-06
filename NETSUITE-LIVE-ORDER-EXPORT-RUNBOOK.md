@@ -19,12 +19,14 @@ The application now requires an explicit retry to promote a validated dry run af
 ## Before enabling live mode
 
 1. Redeploy [`netsuite/vendure-netsuite-sales-order-restlet.js`](netsuite/vendure-netsuite-sales-order-restlet.js) to script `2320`, deployment `1`. The updated RESTlet verifies that the configured Shipping Item is active during dry-run validation.
-2. Confirm the deployment GET response lists Shipping Item `3836` for **Our Truck**.
+2. Run `node scripts/netsuite-order-export-smoke.cjs 3`. It refuses to run unless local export mode is `dry-run`, confirms Shipping Item `3836` is active, proves that an invalid Shipping Item is rejected, and validates the saved candidate payload without creating a transaction.
 3. Keep `NETSUITE_ORDER_EXPORT_MODE=dry-run` and `NETSUITE_ORDER_SHIPPING_METHOD_ID=3836` while performing the remaining checks.
 4. Open **Sales > NetSuite order exports** in the Vendure Dashboard. Confirm order `Z8AUTBCU8XM1L8NW` is `validated`, has no NetSuite internal ID or transaction number, and has an expected total of $31.33.
 5. In NetSuite, search Sales Orders for external ID `VENDURE-Z8AUTBCU8XM1L8NW`. The result must be empty. Also confirm that external IDs for ledger 1 and ledger 2 have no Sales Orders.
 6. Confirm Test Ecommerce customer `4359`, the requester contact, selected ship-to, default bill-to, and all order items are active. Confirm the order should use Our Truck with a $0.00 shipping charge.
 7. Confirm the current application build contains the live-startup safeguard and passes the focused order-export tests.
+
+The script `2320` redeployment and smoke verification passed on October 6, 2026. NetSuite returned `dryRun=true`, `internalId=null`, and `transactionId=null` for ledger 3.
 
 Do not continue if the candidate already exists in NetSuite, the Dashboard row is not validated, the expected total differs, or the shipping item is absent.
 
