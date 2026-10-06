@@ -43,32 +43,36 @@ export const GetCustomerAddressesQuery = graphql(`
     }
 `);
 
-export const GetCustomerOrdersQuery = graphql(`
-    query GetCustomerOrders($options: OrderListOptions) {
-        activeCustomer {
-            id
-            orders(options: $options) {
-                totalItems
-                items {
+export const GetAccountOrdersQuery = graphql(`
+    query GetAccountOrders($options: OrderListOptions) {
+        netsuiteAccountOrders(options: $options) {
+            totalItems
+            accountWide
+            items {
+                id
+                code
+                state
+                totalWithTax
+                currencyCode
+                createdAt
+                updatedAt
+                customer {
                     id
-                    code
-                    state
-                    totalWithTax
-                    currencyCode
-                    createdAt
-                    updatedAt
-                    lines {
+                    firstName
+                    lastName
+                    emailAddress
+                }
+                lines {
+                    id
+                    productVariant {
                         id
-                        productVariant {
+                        name
+                        product {
                             id
                             name
-                            product {
+                            featuredAsset {
                                 id
-                                name
-                                featuredAsset {
-                                    id
-                                    preview
-                                }
+                                preview
                             }
                         }
                     }
@@ -78,9 +82,9 @@ export const GetCustomerOrdersQuery = graphql(`
     }
 `);
 
-export const GetOrderDetailQuery = graphql(`
-    query GetOrderDetail($code: String!) {
-        orderByCode(code: $code) {
+export const GetAccountOrderDetailQuery = graphql(`
+    query GetAccountOrderDetail($code: String!) {
+        netsuiteAccountOrder(code: $code) {
             id
             code
             state

@@ -1,6 +1,6 @@
 import type {Metadata} from 'next';
 import {query} from '@/platform/vendure/api';
-import {GetCustomerOrdersQuery} from '@/features/account/graphql';
+import {GetAccountOrdersQuery} from '@/features/account/graphql';
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from '@/components/ui/table';
 import {
     Pagination,
@@ -16,7 +16,7 @@ import {Button} from "@/components/ui/button";
 import {Price} from '@/features/pricing/price';
 import {OrderStatusBadge} from '@/features/orders/order-status-badge';
 import {formatDate} from '@/platform/i18n/format';
-import { Link, redirect } from '@/platform/i18n/navigation';
+import {Link} from '@/platform/i18n/navigation';
 import {getRouteLocale} from '@/platform/i18n/server';
 import {getTranslations} from 'next-intl/server';
 
@@ -38,7 +38,7 @@ export default async function OrdersPage(props: PageProps<'/[locale]/account/ord
     const skip = (currentPage - 1) * ITEMS_PER_PAGE;
 
     const {data} = await query(
-        GetCustomerOrdersQuery,
+        GetAccountOrdersQuery,
         {
             options: {
                 take: ITEMS_PER_PAGE,
@@ -53,22 +53,20 @@ export default async function OrdersPage(props: PageProps<'/[locale]/account/ord
         {useAuthToken: true}
     );
 
-    if (!data.activeCustomer) {
-        return redirect({href: '/sign-in', locale});
-    }
     const t = await getTranslations({locale, namespace: 'Account'});
 
-    const orders = data.activeCustomer.orders.items;
-    const totalItems = data.activeCustomer.orders.totalItems;
+    const orders = data.netsuiteAccountOrders.items;
+    const totalItems = data.netsuiteAccountOrders.totalItems;
+    const accountWide = data.netsuiteAccountOrders.accountWide;
     const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
     return (
         <div>
-            <h1 className="text-3xl font-bold mb-6">{t('myOrders')}</h1>
+            <h1 className="text-3xl font-bold mb-6">{accountWide?t('accountOrders'):t('myOrders')}</h1>
 
             {orders.length === 0 ? (
                 <div className="text-center py-12">
-                    <p className="text-gray-500">{t('noOrders')}</p>
+                    <p className="text-gray-500">{accountWide?t('noAccountOrders'):t('noOrders')}</p>
                 </div>
             ) : (
                 <>
@@ -96,6 +94,7 @@ export default async function OrdersPage(props: PageProps<'/[locale]/account/ord
                                     </span>
                                     <ArrowRightIcon className="h-4 w-4 text-muted-foreground"/>
                                 </div>
+                                {accountWide&&order.customer&&<p className="mt-2 text-xs text-muted-foreground">{t('orderedBy')}: {order.customer.firstName} {order.customer.lastName} · {order.customer.emailAddress}</p>}
                             </Link>
                         ))}
                     </div>
@@ -108,6 +107,7 @@ export default async function OrdersPage(props: PageProps<'/[locale]/account/ord
                                     <TableHead>{t('orderNumber')}</TableHead>
                                     <TableHead>{t('date')}</TableHead>
                                     <TableHead>{t('status')}</TableHead>
+                                    {accountWide&&<TableHead>{t('orderedBy')}</TableHead>}
                                     <TableHead>{t('itemsHeader')}</TableHead>
                                     <TableHead className="text-right">{t('totalHeader')}</TableHead>
                                 </TableRow>
@@ -126,6 +126,7 @@ export default async function OrdersPage(props: PageProps<'/[locale]/account/ord
                                         <TableCell>
                                             <OrderStatusBadge state={order.state}/>
                                         </TableCell>
+                                        {accountWide&&<TableCell>{order.customer?<><span className="block font-medium">{order.customer.firstName} {order.customer.lastName}</span><span className="text-xs text-muted-foreground">{order.customer.emailAddress}</span></>:t('unknownCustomer')}</TableCell>}
                                         <TableCell>
                                             {order.lines.length}{' '}
                                             {order.lines.length === 1 ? t('item') : t('items')}

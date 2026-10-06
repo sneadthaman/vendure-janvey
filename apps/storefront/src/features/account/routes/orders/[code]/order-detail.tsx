@@ -13,23 +13,23 @@ import {OrderStatusBadge} from '@/features/orders/order-status-badge';
 import {formatDate} from '@/platform/i18n/format';
 import {useLocale, useTranslations} from 'next-intl';
 import type {ResultOf} from '@/platform/vendure/graphql';
-import type {GetOrderDetailQuery} from '@/features/account/graphql';
+import type {GetAccountOrderDetailQuery} from '@/features/account/graphql';
 
-type OrderByCode = NonNullable<ResultOf<typeof GetOrderDetailQuery>['orderByCode']>;
-type OrderLineItem = OrderByCode['lines'][number];
-type OrderDiscount = OrderByCode['discounts'][number];
-type OrderPayment = NonNullable<OrderByCode['payments']>[number];
-type OrderShippingLine = NonNullable<OrderByCode['shippingLines']>[number];
+type AccountOrder = NonNullable<ResultOf<typeof GetAccountOrderDetailQuery>['netsuiteAccountOrder']>;
+type OrderLineItem = AccountOrder['lines'][number];
+type OrderDiscount = AccountOrder['discounts'][number];
+type OrderPayment = NonNullable<AccountOrder['payments']>[number];
+type OrderShippingLine = NonNullable<AccountOrder['shippingLines']>[number];
 
 interface OrderDetailProps {
-    orderPromise: Promise<{ data: ResultOf<typeof GetOrderDetailQuery>; token?: string }>;
+    orderPromise: Promise<{ data: ResultOf<typeof GetAccountOrderDetailQuery>; token?: string }>;
 }
 
 export function OrderDetail({orderPromise}: OrderDetailProps) {
     const {data} = use(orderPromise);
     const locale = useLocale();
     const t = useTranslations('Account');
-    const order = data.orderByCode;
+    const order = data.netsuiteAccountOrder;
 
     if (!order) {
         return null;
@@ -134,6 +134,16 @@ export function OrderDetail({orderPromise}: OrderDetailProps) {
                 </div>
 
                 <div className="space-y-6">
+                    {order.customer && (
+                        <Card>
+                            <CardHeader><CardTitle>{t('orderedBy')}</CardTitle></CardHeader>
+                            <CardContent className="text-sm">
+                                <p className="font-medium">{order.customer.firstName} {order.customer.lastName}</p>
+                                <p className="text-muted-foreground">{order.customer.emailAddress}</p>
+                            </CardContent>
+                        </Card>
+                    )}
+
                     {order.shippingAddress && (
                         <Card>
                             <CardHeader><CardTitle>{t('shippingAddress')}</CardTitle></CardHeader>

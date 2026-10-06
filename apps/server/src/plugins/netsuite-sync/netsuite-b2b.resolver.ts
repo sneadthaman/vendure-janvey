@@ -1,6 +1,7 @@
 import {Args,Mutation,Query,Resolver} from '@nestjs/graphql';
+import {OrderListOptions} from '@vendure/common/lib/generated-types';
 import {ID} from '@vendure/common/lib/shared-types';
-import {Allow,Ctx,Permission,RequestContext} from '@vendure/core';
+import {Allow,Ctx,Order,Permission,Relations,type RelationPaths,RequestContext} from '@vendure/core';
 import gql from 'graphql-tag';
 
 import {PendingOrderChanges,NetsuiteApprovalService} from './services/netsuite-approval.service';
@@ -74,6 +75,11 @@ export const netsuiteShopSchema=gql`
         decisionComment: String
         events: [NetsuiteApprovalEvent!]!
     }
+    type ShopNetsuiteOrderList {
+        items: [Order!]!
+        totalItems: Int!
+        accountWide: Boolean!
+    }
     input PendingOrderLineInput {
         orderLineId: ID!
         quantity: Int!
@@ -94,6 +100,8 @@ export const netsuiteShopSchema=gql`
         myNetsuiteApprovalOrders: [ShopNetsuiteOrderApproval!]!
         pendingNetsuiteApprovalOrders: [ShopNetsuiteOrderApproval!]!
         netsuiteApprovalOrder(id: ID!): ShopNetsuiteOrderApproval!
+        netsuiteAccountOrders(options: OrderListOptions): ShopNetsuiteOrderList!
+        netsuiteAccountOrder(code: String!): Order
         netsuiteInvitation(token: String!): NetsuiteInvitationPreview!
     }
     extend type Mutation {
@@ -134,6 +142,14 @@ export class NetsuiteB2bResolver {
     @Query()
     @Allow(Permission.Authenticated)
     netsuiteApprovalOrder(@Ctx() ctx:RequestContext,@Args('id') id:ID){return this.approvals.one(ctx,id);}
+
+    @Query()
+    @Allow(Permission.Authenticated)
+    netsuiteAccountOrders(@Ctx() ctx:RequestContext,@Args('options') options?:OrderListOptions){return this.approvals.accountOrders(ctx,options);}
+
+    @Query()
+    @Allow(Permission.Authenticated)
+    netsuiteAccountOrder(@Ctx() ctx:RequestContext,@Args('code') code:string,@Relations(Order) relations:RelationPaths<Order>){return this.approvals.accountOrderByCode(ctx,code,relations);}
 
     @Mutation()
     @Allow(Permission.Authenticated)

@@ -1,6 +1,8 @@
 import {Injectable} from '@nestjs/common';
+import {OrderListOptions} from '@vendure/common/lib/generated-types';
 import {ID} from '@vendure/common/lib/shared-types';
-import {ActiveOrderService, EventBus, Order, OrderService, RequestContext, TransactionalConnection} from '@vendure/core';
+import {ActiveOrderService, Customer, EventBus, ListQueryBuilder, Order, OrderService,type RelationPaths, RequestContext, TransactionalConnection} from '@vendure/core';
+import {In} from 'typeorm';
 
 import {NetsuiteAccountAddress,NetsuiteContactLink,NetsuiteOrderApproval,NetsuiteOrderApprovalEvent} from '../entities';
 import {NetsuiteApprovalDecisionEvent,NetsuiteApprovalRequestedEvent,NetsuiteApprovalSubmittedEvent} from '../netsuite-approval.events';
@@ -25,6 +27,7 @@ export class NetsuiteApprovalService {
         private orders:OrderService,
         private customers:NetsuiteCustomerService,
         private eventBus:EventBus,
+        private listQueryBuilder:ListQueryBuilder,
     ){}
 
     async activeAccount(ctx:RequestContext){
@@ -101,6 +104,26 @@ export class NetsuiteApprovalService {
     async one(ctx:RequestContext,id:ID){
         const link=await this.requireContact(ctx);
         return this.getForContact(ctx,id,link);
+    }
+
+    async accountOrders(ctx:RequestContext,options?:OrderListOptions){
+        const scope=await this.orderScope(ctx);
+        const query=this.listQueryBuilder.build(Order,options,{
+            ctx,
+            where:{customerId:In(scope.customerIds),active:false},
+            relations:['lines','customer'],
+            ...(!options?.sort?{orderBy:{createdAt:'DESC' as const}}:{}),
+        });
+        const [items,totalItems]=await query.getManyAndCount();
+        return {items,totalItems,accountWide:scope.accountWide};
+    }
+
+    async accountOrderByCode(ctx:RequestContext,code:string,relations:RelationPaths<Order>){
+        const scope=await this.orderScope(ctx);
+        const order=await this.orders.findOneByCode(ctx,code,relations);
+        if(!order||order.active||!order.customerId)throw new Error('Order was not found for this account.');
+        if(!scope.customerIds.some(id=>String(id)===String(order.customerId)))throw new Error('Order was not found for this account.');
+        return order;
     }
 
     async modify(ctx:RequestContext,id:ID,changes:PendingOrderChanges){
@@ -233,6 +256,27 @@ export class NetsuiteApprovalService {
         const link=await this.requireContact(ctx);
         if(!link.canApproveOrders)throw new Error('This contact is not an order approver.');
         return link;
+    }
+
+    private async accountCustomerIds(ctx:RequestContext,link:NetsuiteContactLink){
+        if(!link.canApproveOrders)return [link.customerId];
+        const links=await this.connection.getRepository(ctx,NetsuiteContactLink).find({
+            where:{accountId:link.accountId,active:true},
+            select:{customerId:true},
+        });
+        return links.map(item=>item.customerId);
+    }
+
+    private async orderScope(ctx:RequestContext){
+        if(!ctx.activeUserId)throw new Error('An authenticated customer is required.');
+        const link=await this.customers.findLinkForUser(ctx);
+        if(link)return {customerIds:await this.accountCustomerIds(ctx,link),accountWide:link.canApproveOrders};
+        const customer=await this.connection.getRepository(ctx,Customer).findOne({
+            where:{user:{id:ctx.activeUserId}},
+            relations:{user:true},
+        });
+        if(!customer)throw new Error('An authenticated customer is required.');
+        return {customerIds:[customer.id],accountWide:false};
     }
 
     private async requireAddress(ctx:RequestContext,link:NetsuiteContactLink,addressId:ID){

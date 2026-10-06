@@ -42,9 +42,9 @@ async function ApprovalOrdersContent({searchParams}:Pick<PageProps<'/[locale]/ac
                     </form>
                     <form action={resolveApproval} className="flex flex-wrap gap-2">
                         <input type="hidden" name="id" value={approval.id}/><Input name="comment" placeholder={t('decisionComment')} className="min-w-64 flex-1"/>
-                        <Button name="action" value="approve">{t('approve')}</Button>
-                        <Button name="action" value="reject" variant="secondary">{t('reject')}</Button>
-                        <Button name="action" value="cancel" variant="destructive">{t('cancel')}</Button>
+                        <Button type="submit" name="action" value="approve">{t('approve')}</Button>
+                        <Button type="submit" name="action" value="reject" variant="secondary">{t('reject')}</Button>
+                        <Button type="submit" name="action" value="cancel" variant="destructive">{t('cancel')}</Button>
                     </form>
                     <Audit events={approval.events} label={t('auditHistory',{count:approval.events.length})}/>
                 </CardContent>
@@ -54,7 +54,7 @@ async function ApprovalOrdersContent({searchParams}:Pick<PageProps<'/[locale]/ac
             {mine.length===0?<p className="text-muted-foreground">{t('noneRequested')}</p>:mine.map(approval=><Card key={approval.id}>
                 <CardHeader><CardTitle>#{approval.order.code}</CardTitle><p className="capitalize">{approval.status} · <Price value={approval.order.totalWithTax} currencyCode={approval.order.currencyCode}/></p></CardHeader>
                 <CardContent className="space-y-3">
-                    {approval.status==='pending'&&<form action={resolveApproval}><input type="hidden" name="id" value={approval.id}/><Button name="action" value="cancel" variant="outline">{t('cancelRequest')}</Button></form>}
+                    {approval.status==='pending'&&<form action={resolveApproval}><input type="hidden" name="id" value={approval.id}/><Button type="submit" name="action" value="cancel" variant="outline">{t('cancelRequest')}</Button></form>}
                     <Audit events={approval.events} label={t('auditHistory',{count:approval.events.length})}/>
                 </CardContent>
             </Card>)}
