@@ -5,6 +5,7 @@ import {In} from 'typeorm';
 import {Subscription} from 'rxjs';
 
 import {NetsuiteAccountAddress,NetsuiteContactLink,NetsuiteOrderApproval,NetsuiteOrderExport} from '../entities';
+import {shouldResumeOrderExport} from '../order-export-policy';
 import {NetsuiteSalesOrderRequest} from '../types';
 import {NetsuiteService} from './netsuite.service';
 
@@ -57,7 +58,7 @@ export class NetsuiteOrderExportService implements OnModuleInit,OnModuleDestroy 
         if(!this.client.orderExportConfigured)throw new Error('NetSuite order export is disabled or its RESTlet URL is missing.');
         const repo=this.connection.getRepository(ctx,NetsuiteOrderExport);
         const record=await repo.findOneByOrFail({id});
-        if(['exported','exported_with_mismatch'].includes(record.status))throw new Error('A completed NetSuite export cannot be retried.');
+        if(['exported','exported_with_mismatch','cancelled'].includes(record.status))throw new Error('A completed or cancelled NetSuite export cannot be retried.');
         record.status='pending';record.lastError=null;record.contextJson=JSON.stringify(ctx.serialize());await repo.save(record);
         await this.enqueue(record,ctx.serialize());
         return record;
@@ -113,8 +114,12 @@ export class NetsuiteOrderExportService implements OnModuleInit,OnModuleDestroy 
 
     private async resumeIncomplete(){
         const repo=this.connection.rawConnection.getRepository(NetsuiteOrderExport);
-        const records=await repo.find({where:{status:In(this.client.orderExportMode==='live'?['pending','failed','validated']:['pending','failed'])},take:500});
+        const records=await repo.find({where:{status:In(['pending','failed','exporting'])},take:500});
         for(const record of records){
+            // Never turn an old dry-run (or an unattempted record captured while
+            // exports were disabled) into a live Sales Order merely by restarting
+            // with live mode enabled. The operator must explicitly retry that row.
+            if(!shouldResumeOrderExport(this.client.orderExportMode,record.status,record.payloadJson))continue;
             try{await this.enqueue(record,JSON.parse(record.contextJson));}
             catch(error){Logger.error(`Could not resume order export ${record.id}: ${this.message(error)}`,loggerCtx);}
         }

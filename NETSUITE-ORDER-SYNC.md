@@ -41,6 +41,8 @@ NETSUITE_ORDER_SHIPPING_METHOD_ID=
 
 Always begin with `dry-run`. Change to `live` only after a representative taxable and exempt order pass and the resulting NetSuite totals and defaults have been reviewed.
 
+Changing to `live` does not automatically submit records that were validated in dry-run mode. A staff member must explicitly choose **Export now** for each validated record. Startup recovery resumes only records whose stored payload shows that a live attempt was already in progress; this prevents an environment change from promoting a backlog of dry runs into Sales Orders.
+
 ## NetSuite deployment
 
 Deploy `netsuite/vendure-netsuite-sales-order-restlet.js` as a new RESTlet under the existing token-based integration. Do not replace a read-only catalog, pricing, image, or customer deployment with this script.
@@ -67,3 +69,5 @@ Migration `1789680000000-netsuite-order-exports.ts` creates the durable export l
 6. Confirm the desired NetSuite form, terms, location, department, class, sales representative, and shipping behavior.
 7. Enable `live` for one controlled order and compare customer, contact, addresses, items, prices, shipping, tax, and total in NetSuite.
 8. Test retrying the same export and confirm the original Sales Order internal ID and transaction number are returned.
+
+Use `NETSUITE-LIVE-ORDER-EXPORT-RUNBOOK.md` for the first controlled live order, including the exact candidate, stop conditions, recovery rules, and rollback to dry-run.

@@ -2,7 +2,7 @@ import {DeepPartial,ID} from '@vendure/common/lib/shared-types';
 import {Order,VendureEntity} from '@vendure/core';
 import {Column,Entity,Index,JoinColumn,OneToOne} from 'typeorm';
 
-export type NetsuiteOrderExportStatus='pending'|'exporting'|'validated'|'exported'|'exported_with_mismatch'|'failed';
+export type NetsuiteOrderExportStatus='pending'|'exporting'|'validated'|'exported'|'exported_with_mismatch'|'failed'|'cancelled';
 
 @Entity('netsuite_order_export')
 export class NetsuiteOrderExport extends VendureEntity {

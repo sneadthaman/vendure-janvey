@@ -13,7 +13,7 @@ function payload(overrides={}){
         lines:[{itemInternalId:'1968',sku:'KCC 1804',quantity:2,rateCents:6590,amountCents:13180}],...overrides};
 }
 
-function fixture({existing=null}={}){
+function fixture({existing=null,shippingExists=true}={}){
     let endpoint,created=0,saved=0,fields={},lines=[];
     const customer={getValue:({fieldId})=>({isinactive:false,custentity_web_customer:true}[fieldId]),getFields:()=>['isinactive','custentity_web_customer'],
         getSublistFields:()=>['internalid'],getLineCount:()=>2,getSublistValue:({line})=>line===0?'10':'11'};
@@ -26,7 +26,7 @@ function fixture({existing=null}={}){
         if(type==='salesorder'&&existing)callback({getValue:()=>existing});
         if(type==='contact')callback({getValue:()=> '5847'});
         if(type==='item')callback({getValue:({name})=>name==='internalid'?'1968':'F'});
-        if(type==='shipitem')callback({getValue:({name})=>name==='internalid'?'99':'Janvey Delivery'});
+        if(type==='shipitem'&&shippingExists)callback({getValue:({name})=>name==='internalid'?'99':'Janvey Delivery'});
     }})})};
     vm.runInNewContext(source,{define:(_deps,factory)=>{endpoint=factory(record,search,{getCurrentScript:()=>({getRemainingUsage:()=>4900})},{error:()=>{}});}});
     return {get:()=>endpoint.get(),post:value=>endpoint.post(value),stats:()=>({created,saved,fields,lines})};
@@ -61,5 +61,11 @@ test('invalid totals and unmapped paid shipping are rejected before record creat
     const value=fixture();
     assert.throws(()=>value.post(payload({expectedTotalCents:1})),/totals do not reconcile/);
     assert.throws(()=>value.post(payload({shippingMethodInternalId:null})),/shippingMethodInternalId/);
+    assert.equal(value.stats().created,0);
+});
+
+test('dry run rejects an inactive or missing Shipping Item before record creation',()=>{
+    const value=fixture({shippingExists:false});
+    assert.throws(()=>value.post(payload({shippingCents:0,expectedTotalCents:14360})),/Shipping Item/);
     assert.equal(value.stats().created,0);
 });

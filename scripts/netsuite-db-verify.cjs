@@ -53,6 +53,9 @@ async function main() {
                     JOIN facet f ON f.id=fv."facetId" AND f.code='netsuite-class'
                     WHERE pfv."productId"=p.id
                 )`),
+            orderExports:await many(`SELECT id,"externalId",status,"attemptCount","expectedTotalCents",
+                "netsuiteInternalId","netsuiteTransactionId","lastError","lastAttemptAt"
+                FROM netsuite_order_export ORDER BY id`),
         };
         console.log(JSON.stringify(result,null,2));
     } finally {

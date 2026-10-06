@@ -98,6 +98,13 @@ define(['N/record','N/search','N/runtime','N/log'],(record,search,runtime,log)=>
     if(!found)throw new Error('Contact is inactive or does not belong to the customer');
   }
 
+  function validateShippingMethod(payload){
+    if(!payload.shippingMethodInternalId)return;
+    let found=false;
+    search.create({type:search.Type.SHIP_ITEM,filters:[['internalid','anyof',payload.shippingMethodInternalId],'AND',['isinactive','is','F']],columns:['internalid']}).run().each(()=>{found=true;return false;});
+    if(!found)throw new Error('Shipping Item is inactive or was not found');
+  }
+
   function moneyToCents(value){
     const number=Number(value);
     return Number.isFinite(number)?Math.round(number*100):null;
@@ -140,7 +147,7 @@ define(['N/record','N/search','N/runtime','N/log'],(record,search,runtime,log)=>
     const payload=normalize(body);
     const existing=existingSalesOrder(payload.externalId);
     if(existing)return resultFor(existing,payload.externalId,true,payload.dryRun);
-    validateCustomerAndAddresses(payload);validateContact(payload);validateItems(payload);
+    validateCustomerAndAddresses(payload);validateContact(payload);validateItems(payload);validateShippingMethod(payload);
     if(payload.dryRun)return resultFor(null,payload.externalId,false,true);
     try{return resultFor(createSalesOrder(payload),payload.externalId,false,false);}
     catch(error){
