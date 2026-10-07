@@ -65,3 +65,9 @@ Do not continue if the candidate already exists in NetSuite, the Dashboard row i
 ## Acceptance criteria
 
 The first live test passes when exactly one NetSuite Sales Order exists for `VENDURE-Z8AUTBCU8XM1L8NW`, the Dashboard records its internal ID and transaction number as `exported`, all lines and addresses match, Our Truck shipping is $0.00, NetSuite tax is correct, the saved total is $31.33, and no other validated ledger row was submitted.
+
+## First live result
+
+The controlled export completed on October 7, 2026. NetSuite created Sales Order `SO310591`, internal ID `204855`, for external ID `VENDURE-Z8AUTBCU8XM1L8NW`. Its saved subtotal was $28.84, Our Truck shipping was $0.00, tax was $2.49, and total was $31.33.
+
+The initial response represented NetSuite's blank zero-dollar `shippingcost` as `null`, so Vendure left ledger 3 in `failed` even though the transaction had been created. The recovery probe confirmed the external ID before any retry. The RESTlet now normalizes only a blank shipping cost to zero cents. After redeployment, an idempotent retry returned the existing `SO310591` and Vendure marked ledger 3 `exported` with matching totals and no error. Ledger 1 remained `validated`, ledger 2 remained `cancelled`, and the backend was returned to `dry-run`.

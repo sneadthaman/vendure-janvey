@@ -71,3 +71,5 @@ Migration `1789680000000-netsuite-order-exports.ts` creates the durable export l
 8. Test retrying the same export and confirm the original Sales Order internal ID and transaction number are returned.
 
 Use `NETSUITE-LIVE-ORDER-EXPORT-RUNBOOK.md` for the first controlled live order, including the exact candidate, stop conditions, recovery rules, and rollback to dry-run.
+
+The first live order completed on October 7, 2026 as NetSuite transaction `SO310591` / internal ID `204855`. Its idempotent recovery also verified the lost-or-invalid-response procedure: search the external ID first, correct the response contract, and only then retry so the existing transaction is returned.
