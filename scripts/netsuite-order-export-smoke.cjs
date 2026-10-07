@@ -5,7 +5,9 @@ const OAuth=require('oauth-1.0a');
 const crypto=require('crypto-js');
 const {Client}=require('pg');
 
-const ledgerId=process.argv[2]||'3';
+const ledgerId=process.argv.find(value=>/^\d+$/.test(value))||'3';
+const recoveryMode=process.argv.includes('--recovery');
+const inspectExisting=process.argv.includes('--inspect-existing');
 
 function required(name){
     const value=process.env[name]?.trim();
@@ -41,29 +43,61 @@ async function main(){
     try{
         row=(await db.query('SELECT id,"externalId",status,"payloadJson" FROM netsuite_order_export WHERE id=$1',[ledgerId])).rows[0];
     }finally{await db.end();}
-    if(!row||row.status!=='validated'||!row.payloadJson)throw new Error(`Ledger ${ledgerId} is not a validated dry-run candidate.`);
+    const eligibleStatus=row&&(row.status==='validated'||recoveryMode&&row.status==='failed');
+    if(!eligibleStatus||!row.payloadJson)throw new Error(`Ledger ${ledgerId} is not a ${recoveryMode?'failed or validated':'validated'} dry-run candidate.`);
     const payload=JSON.parse(row.payloadJson);
-    if(payload.dryRun!==true||payload.externalId!==row.externalId)throw new Error('Stored payload is not a consistent dry-run request.');
+    if(payload.externalId!==row.externalId||!recoveryMode&&payload.dryRun!==true)throw new Error('Stored payload is not a consistent request for this ledger.');
+    const dryRunPayload={...payload,dryRun:true};
 
     const discovery=(await signedRequest('GET')).data;
     if(discovery?.success!==true||discovery.contractVersion!==1||!Array.isArray(discovery.shippingItems))throw new Error('Invalid Shipping Item discovery response.');
     const shipping=discovery.shippingItems.find(item=>String(item.internalId)===shippingMethodInternalId);
     if(!shipping)throw new Error(`Shipping Item ${shippingMethodInternalId} is not active or visible to the integration role.`);
 
-    let rejectedInvalidShipping=false;
+    let rejectedInvalidShipping=false,existingExternalIdDetected=false;
     try{
-        await signedRequest('POST',{...payload,shippingMethodInternalId:'999999999'});
+        const probe=(await signedRequest('POST',{...dryRunPayload,shippingMethodInternalId:'999999999'})).data;
+        existingExternalIdDetected=probe?.success===true&&probe.externalId===row.externalId;
     }catch(error){
         rejectedInvalidShipping=axios.isAxiosError(error)&&Boolean(error.response);
     }
+    if(recoveryMode&&existingExternalIdDetected){
+        if(inspectExisting){
+            const existing=(await signedRequest('POST',{...payload,dryRun:false})).data;
+            console.log(JSON.stringify({
+                verified:true,recoveryMode:true,ledgerId:String(row.id),externalId:row.externalId,
+                existingExternalIdDetected:true,createdByProbe:false,
+                response:{
+                    success:existing?.success,contractVersion:existing?.contractVersion,dryRun:existing?.dryRun,
+                    idempotent:existing?.idempotent,internalId:existing?.internalId,transactionId:existing?.transactionId,
+                    subtotalCents:existing?.subtotalCents,shippingCents:existing?.shippingCents,
+                    taxCents:existing?.taxCents,totalCents:existing?.totalCents,
+                },
+            },null,2));
+            return;
+        }
+        console.log(JSON.stringify({
+            verified:true,recoveryMode:true,ledgerId:String(row.id),externalId:row.externalId,
+            existingExternalIdDetected:true,dryRun:true,createdByProbe:false,
+        },null,2));
+        return;
+    }
+    if(recoveryMode){
+        if(!rejectedInvalidShipping)throw new Error('The recovery probe did not return a conclusive result.');
+        console.log(JSON.stringify({
+            verified:true,recoveryMode:true,ledgerId:String(row.id),externalId:row.externalId,
+            existingExternalIdDetected:false,dryRun:true,createdByProbe:false,
+        },null,2));
+        return;
+    }
     if(!rejectedInvalidShipping)throw new Error('The deployed RESTlet did not reject an invalid Shipping Item; redeploy the current script before live export.');
 
-    const result=(await signedRequest('POST',{...payload,shippingMethodInternalId})).data;
+    const result=(await signedRequest('POST',{...dryRunPayload,shippingMethodInternalId})).data;
     if(result?.success!==true||result.contractVersion!==1||result.dryRun!==true||result.externalId!==row.externalId||result.internalId!==null||result.transactionId!==null){
         throw new Error('The live dry-run response was invalid or returned a transaction identifier.');
     }
     console.log(JSON.stringify({
-        verified:true,ledgerId:String(row.id),externalId:row.externalId,
+        verified:true,recoveryMode,ledgerId:String(row.id),externalId:row.externalId,existingExternalIdDetected:false,
         shippingItem:{internalId:String(shipping.internalId),name:String(shipping.name||'')},
         invalidShippingRejected:true,dryRun:result.dryRun,internalId:result.internalId,transactionId:result.transactionId,
     },null,2));

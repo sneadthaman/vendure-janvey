@@ -105,7 +105,8 @@ define(['N/record','N/search','N/runtime','N/log'],(record,search,runtime,log)=>
     if(!found)throw new Error('Shipping Item is inactive or was not found');
   }
 
-  function moneyToCents(value){
+  function moneyToCents(value,blankAsZero){
+    if(blankAsZero&&(value===null||value===undefined||value===''))return 0;
     const number=Number(value);
     return Number.isFinite(number)?Math.round(number*100):null;
   }
@@ -114,7 +115,7 @@ define(['N/record','N/search','N/runtime','N/log'],(record,search,runtime,log)=>
     if(dryRun)return {success:true,contractVersion:CONTRACT_VERSION,dryRun:true,idempotent,internalId:null,transactionId:null,externalId,subtotalCents:null,shippingCents:null,taxCents:null,totalCents:null,remainingUsage:runtime.getCurrentScript().getRemainingUsage()};
     const salesOrder=record.load({type:record.Type.SALES_ORDER,id:internalId,isDynamic:false});
     return {success:true,contractVersion:CONTRACT_VERSION,dryRun:false,idempotent,internalId:String(internalId),transactionId:String(salesOrder.getValue({fieldId:'tranid'})||''),externalId,
-      subtotalCents:moneyToCents(salesOrder.getValue({fieldId:'subtotal'})),shippingCents:moneyToCents(salesOrder.getValue({fieldId:'shippingcost'})),
+      subtotalCents:moneyToCents(salesOrder.getValue({fieldId:'subtotal'})),shippingCents:moneyToCents(salesOrder.getValue({fieldId:'shippingcost'}),true),
       taxCents:moneyToCents(salesOrder.getValue({fieldId:'taxtotal'})),totalCents:moneyToCents(salesOrder.getValue({fieldId:'total'})),remainingUsage:runtime.getCurrentScript().getRemainingUsage()};
   }
 

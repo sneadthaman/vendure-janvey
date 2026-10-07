@@ -13,11 +13,11 @@ function payload(overrides={}){
         lines:[{itemInternalId:'1968',sku:'KCC 1804',quantity:2,rateCents:6590,amountCents:13180}],...overrides};
 }
 
-function fixture({existing=null,shippingExists=true}={}){
+function fixture({existing=null,shippingExists=true,shippingCost=5}={}){
     let endpoint,created=0,saved=0,fields={},lines=[];
     const customer={getValue:({fieldId})=>({isinactive:false,custentity_web_customer:true}[fieldId]),getFields:()=>['isinactive','custentity_web_customer'],
         getSublistFields:()=>['internalid'],getLineCount:()=>2,getSublistValue:({line})=>line===0?'10':'11'};
-    const loadedOrder={getValue:({fieldId})=>({tranid:'SO123',subtotal:131.8,shippingcost:5,taxtotal:11.8,total:148.6}[fieldId])};
+    const loadedOrder={getValue:({fieldId})=>({tranid:'SO123',subtotal:131.8,shippingcost:shippingCost,taxtotal:11.8,total:148.6}[fieldId])};
     const salesOrder={setValue:({fieldId,value})=>{fields[fieldId]=value;},selectNewLine:()=>{lines.push({});},
         setCurrentSublistValue:({fieldId,value})=>{lines.at(-1)[fieldId]=value;},commitLine:()=>{},save:()=>{saved++;return '444';}};
     const record={Type:{CUSTOMER:'customer',SALES_ORDER:'salesorder'},load:({type})=>type==='customer'?customer:loadedOrder,
@@ -55,6 +55,11 @@ test('live export creates a custom-priced Sales Order with the stable external i
 test('an existing external id is idempotent and never creates a second Sales Order',()=>{
     const value=fixture({existing:'444'});const result=value.post(payload({dryRun:false}));
     assert.equal(result.idempotent,true);assert.equal(result.internalId,'444');assert.equal(value.stats().created,0);
+});
+
+test('a blank NetSuite shipping cost is returned as zero cents',()=>{
+    const value=fixture({existing:'444',shippingCost:''});const result=value.post(payload({dryRun:false}));
+    assert.equal(result.idempotent,true);assert.equal(result.shippingCents,0);assert.equal(value.stats().created,0);
 });
 
 test('invalid totals and unmapped paid shipping are rejected before record creation',()=>{
