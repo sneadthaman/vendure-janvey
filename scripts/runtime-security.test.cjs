@@ -3,7 +3,12 @@ const assert=require('node:assert/strict');
 process.env.TS_NODE_COMPILER_OPTIONS=JSON.stringify({ignoreDeprecations:'6.0'});
 require('ts-node').register({project:require('node:path').resolve(__dirname,'../apps/server/tsconfig.json')});
 
-const {parseCorsOrigins,requireProductionValue}=require('../apps/server/src/runtime-security');
+const {
+    parseCorsOrigins,
+    requireAbsoluteProductionPath,
+    requireHttpUrl,
+    requireProductionValue,
+}=require('../apps/server/src/runtime-security');
 
 test('production values reject missing, short, and placeholder secrets',()=>{
     assert.throws(()=>requireProductionValue('COOKIE_SECRET',undefined),/required/);
@@ -38,4 +43,12 @@ test('CORS origins reject paths, non-HTTP protocols, and credentials',()=>{
     assert.throws(()=>parseCorsOrigins('https://example.com/shop'),/without paths/);
     assert.throws(()=>parseCorsOrigins('javascript:alert(1)'),/HTTP/);
     assert.throws(()=>parseCorsOrigins('https://user:password@example.com'),/without paths/);
+});
+
+test('production asset settings require an absolute path and public HTTP URL',()=>{
+    assert.throws(()=>requireAbsoluteProductionPath('ASSET_UPLOAD_DIR','relative/assets'),/absolute path/);
+    assert.equal(requireAbsoluteProductionPath('ASSET_UPLOAD_DIR',require('node:path').resolve('assets')),require('node:path').resolve('assets'));
+    assert.equal(requireHttpUrl('ASSET_URL_PREFIX','https://shop.example.com/assets/'),'https://shop.example.com/assets/');
+    assert.throws(()=>requireHttpUrl('ASSET_URL_PREFIX','file:///assets'),/HTTP/);
+    assert.throws(()=>requireHttpUrl('ASSET_URL_PREFIX','https://user:secret@example.com/assets'),/credentials/);
 });

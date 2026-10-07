@@ -19,6 +19,7 @@ import {netsuiteCustomerRefreshTask} from './netsuite-customer-refresh.task';
 import {NetsuiteInvitationService} from './services/netsuite-invitation.service';
 import {NetsuiteActiveOrderPricingService} from './services/netsuite-active-order-pricing.service';
 import {NetsuiteOrderExportService} from './services/netsuite-order-export.service';
+import {RuntimeReadinessController} from './runtime-readiness.controller';
 
 @VendurePlugin({
     imports: [PluginCommonModule],
@@ -36,6 +37,7 @@ import {NetsuiteOrderExportService} from './services/netsuite-order-export.servi
         NetsuiteOrderExportService,
     ],
     entities: [NetsuiteSyncRun,NetsuiteAccount,NetsuiteAccountAddress,NetsuiteContactLink,NetsuiteContactInvitation,NetsuiteCustomerSyncRun,NetsuiteOrderApproval,NetsuiteOrderApprovalEvent,NetsuiteOrderExport],
+    controllers: [RuntimeReadinessController],
     dashboard: './dashboard/index.tsx',
     adminApiExtensions: {schema:netsuiteAdminSchema,resolvers:[NetsuiteSyncResolver]},
     shopApiExtensions: {schema:netsuiteShopSchema,resolvers:[NetsuiteB2bResolver]},

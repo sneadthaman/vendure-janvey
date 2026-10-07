@@ -279,3 +279,15 @@ Vendure's built-in GraphQL CSRF prevention is enabled for the Shop and Admin API
 CORS now uses an explicit normalized origin list in every environment. Development defaults to the configured storefront origin; production uses only `CORS_ORIGINS` and otherwise sends no cross-origin allow header. Live preflight checks returned `Access-Control-Allow-Origin` for `http://localhost:3001` and omitted it for an untrusted origin.
 
 Production startup validates `COOKIE_SECRET`, `SUPERADMIN_USERNAME`, and `SUPERADMIN_PASSWORD`. The cookie secret must contain at least 32 characters, the superadmin password at least 16, and known scaffold/default placeholders are rejected. Production session cookies are HTTP-only, secure, and SameSite Lax. The safe configuration contract is documented in `apps/server/.env.example` and `apps/server/README.md`; actual credentials remain untracked.
+
+### Deployment and recovery baseline (2026-10-07)
+
+Production assets no longer use the scaffold `www.my-shop.com` URL. Backend startup now requires an absolute persistent `ASSET_UPLOAD_DIR` and public `ASSET_URL_PREFIX`, while the storefront accepts the same host through `NEXT_PUBLIC_VENDURE_ASSET_URL` and disables private-IP image access in production.
+
+The API exposes `/ready`, which verifies PostgreSQL with `SELECT 1`; Vendure's `/health` remains the process liveness check. The worker starts its own private health endpoint on `VENDURE_WORKER_HEALTH_PORT`, defaulting to `3020`. Live local checks returned success from API liveness, database readiness, worker health, and the storefront.
+
+The backend Dockerfile now builds from the monorepo root, compiles the Vendure Dashboard without embedding deployment secrets, installs server-only production dependencies in a separate stage, includes the server workspace dependency tree, defines a readiness health check, and can run the API or worker from one image. A real Linux image build completed, and a temporary `APP_ENV=production` container started against local PostgreSQL and returned HTTP 200 from `/ready` before it was removed.
+
+Direct production dependencies were updated to Next.js `16.3.6` and Nodemailer `10.0.16`; Microsoft Graph MIME/token tests and the full production build passed afterward. The production audit has no critical advisories but retains 25 high and 6 moderate findings, chiefly in Vendure's pinned Apollo/GraphQL, Dashboard build tooling, and Sharp tree. Forced npm remediation proposes incompatible Vendure changes and was not applied. This remains a production release gate pending a Vendure-supported update or explicit reviewed disposition.
+
+`PRODUCTION-OPERATIONS.md` now defines the API/worker/storefront/PostgreSQL topology, environment inventory, persistent data contract, backup evidence, deployment order, and restore drill. Restore starts with email and NetSuite export disabled, audits incomplete order-export ledger rows against NetSuite external IDs, and only restores live export after dry-run validation.

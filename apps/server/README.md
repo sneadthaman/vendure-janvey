@@ -65,6 +65,10 @@ Use deployment-platform secrets for these values and never commit them.
 
 ### Running directly
 
+Production also requires an absolute persistent `ASSET_UPLOAD_DIR` and its public
+`ASSET_URL_PREFIX`. See the repository-level `PRODUCTION-OPERATIONS.md` for the validated container
+build, API and worker health endpoints, deployment order, backups, and restore procedure.
+
 You can run the built files directly with the `start` script:
 
 ```

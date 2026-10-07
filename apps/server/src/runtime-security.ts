@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 interface RequiredValueOptions {
     minLength?: number;
     rejectedValues?: string[];
@@ -44,4 +46,26 @@ export function parseCorsOrigins(value: string | undefined, fallback: string[] =
         }
         return parsed.origin;
     }))];
+}
+
+export function requireAbsoluteProductionPath(name: string, value: string | undefined): string {
+    const normalized = requireProductionValue(name, value);
+    if (!path.isAbsolute(normalized)) {
+        throw new Error(`${name} must be an absolute path in production.`);
+    }
+    return normalized;
+}
+
+export function requireHttpUrl(name: string, value: string | undefined): string {
+    const normalized = requireProductionValue(name, value);
+    let parsed: URL;
+    try {
+        parsed = new URL(normalized);
+    } catch {
+        throw new Error(`${name} must be a valid HTTP(S) URL.`);
+    }
+    if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password) {
+        throw new Error(`${name} must be a valid HTTP(S) URL without credentials.`);
+    }
+    return parsed.toString();
 }

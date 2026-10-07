@@ -12,6 +12,9 @@ declare global {
             SUPERADMIN_USERNAME: string;
             SUPERADMIN_PASSWORD: string;
             CORS_ORIGINS?: string;
+            ASSET_UPLOAD_DIR?: string;
+            ASSET_URL_PREFIX?: string;
+            VENDURE_WORKER_HEALTH_PORT?: string;
             STOREFRONT_URL?: string;
             EMAIL_FROM_ADDRESS?: string;
             EMAIL_TRANSPORT?: string;

@@ -1,5 +1,9 @@
 import {EmailDetails, EmailSender, EmailTransportOptions} from '@vendure/email-plugin';
-import {createTransport} from 'nodemailer';
+import {
+    createTransport,
+    type SendMailOptions,
+    type StreamSentMessageInfo,
+} from 'nodemailer';
 
 export interface MicrosoftGraphEmailSenderOptions {
     tenantId:string;
@@ -40,10 +44,11 @@ export class MicrosoftGraphEmailSender implements EmailSender {
     }
 
     private async createMimeMessage(email:EmailDetails):Promise<Buffer>{
-        const transporter=createTransport({streamTransport:true,buffer:true,newline:'windows'});
-        const result=await transporter.sendMail({
+        const transporter=createTransport({streamTransport:true as const,buffer:true,newline:'windows'});
+        const result:StreamSentMessageInfo=await transporter.sendMail({
             from:email.from,to:email.recipient,subject:email.subject,html:email.body,
-            attachments:email.attachments,cc:email.cc,bcc:email.bcc,replyTo:email.replyTo,
+            attachments:email.attachments as SendMailOptions['attachments'],
+            cc:email.cc,bcc:email.bcc,replyTo:email.replyTo,
         });
         if(Buffer.isBuffer(result.message))return result.message;
         if(typeof result.message==='string')return Buffer.from(result.message);

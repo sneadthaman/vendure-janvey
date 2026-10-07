@@ -27,7 +27,12 @@ import {
     netsuiteAccountTermsPaymentHandler,
 } from './plugins/netsuite-sync/account-terms-payment';
 import { customFields } from './custom-fields';
-import {parseCorsOrigins, requireProductionValue} from './runtime-security';
+import {
+    parseCorsOrigins,
+    requireAbsoluteProductionPath,
+    requireHttpUrl,
+    requireProductionValue,
+} from './runtime-security';
 
 const IS_DEV = process.env.APP_ENV === 'dev';
 // PORT wins because hosting platforms inject it into the environment at runtime, and that
@@ -65,6 +70,12 @@ const superadminPassword = IS_DEV
         minLength: 16,
         rejectedValues: ['superadmin', 'replace-me', 'replace-with-at-least-16-characters'],
     });
+const assetUploadDir = IS_DEV
+    ? path.join(__dirname, '../static/assets')
+    : requireAbsoluteProductionPath('ASSET_UPLOAD_DIR', process.env.ASSET_UPLOAD_DIR);
+const assetUrlPrefix = IS_DEV
+    ? undefined
+    : requireHttpUrl('ASSET_URL_PREFIX', process.env.ASSET_URL_PREFIX);
 const emailTransport=process.env.EMAIL_TRANSPORT?.trim().toLowerCase()||(IS_DEV?'file':'microsoft-graph');
 if(emailTransport!=='file'&&emailTransport!=='microsoft-graph'){
     throw new Error('EMAIL_TRANSPORT must be file or microsoft-graph.');
@@ -167,11 +178,8 @@ export const config: VendureConfig = {
         GraphiqlPlugin.init(),
         AssetServerPlugin.init({
             route: 'assets',
-            assetUploadDir: path.join(__dirname, '../static/assets'),
-            // For local dev, the correct value for assetUrlPrefix should
-            // be guessed correctly, but for production it will usually need
-            // to be set manually to match your production url.
-            assetUrlPrefix: IS_DEV ? undefined : 'https://www.my-shop.com/assets/',
+            assetUploadDir,
+            assetUrlPrefix,
         }),
         DefaultSchedulerPlugin.init(),
         DefaultJobQueuePlugin.init({ useDatabaseForBuffer: true }),
