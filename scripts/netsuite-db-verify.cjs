@@ -56,6 +56,12 @@ async function main() {
             orderExports:await many(`SELECT id,"externalId",status,"attemptCount","expectedTotalCents",
                 "netsuiteInternalId","netsuiteTransactionId","lastError","lastAttemptAt"
                 FROM netsuite_order_export ORDER BY id`),
+            paymentMethods:await many(`SELECT pm.id,pm.code,pm.enabled,pm.handler,pm.checker,
+                pmt.name,pmt.description
+                FROM payment_method pm
+                LEFT JOIN payment_method_translation pmt
+                    ON pmt."baseId"=pm.id AND pmt."languageCode"='en'
+                ORDER BY pm.id`),
         };
         console.log(JSON.stringify(result,null,2));
     } finally {

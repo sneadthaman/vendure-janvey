@@ -1,5 +1,4 @@
 import {
-    dummyPaymentHandler,
     DefaultJobQueuePlugin,
     DefaultSchedulerPlugin,
     DefaultSearchPlugin,
@@ -23,6 +22,10 @@ import path from 'path';
 import {MicrosoftGraphEmailSender} from './email/microsoft-graph-email-sender';
 import { NetsuiteSyncPlugin } from './plugins/netsuite-sync/netsuite-sync.plugin';
 import { NetsuiteBillToTaxZoneStrategy } from './plugins/netsuite-sync/b2b-strategies';
+import {
+    netsuiteAccountTermsEligibilityChecker,
+    netsuiteAccountTermsPaymentHandler,
+} from './plugins/netsuite-sync/account-terms-payment';
 import { customFields } from './custom-fields';
 
 const IS_DEV = process.env.APP_ENV === 'dev';
@@ -121,7 +124,8 @@ export const config: VendureConfig = {
         password: process.env.DB_PASSWORD,
     },
     paymentOptions: {
-        paymentMethodHandlers: [dummyPaymentHandler],
+        paymentMethodHandlers: [netsuiteAccountTermsPaymentHandler],
+        paymentMethodEligibilityCheckers: [netsuiteAccountTermsEligibilityChecker],
     },
     taxOptions: {
         // NetSuite calculates sales tax from the authoritative bill-to address.
