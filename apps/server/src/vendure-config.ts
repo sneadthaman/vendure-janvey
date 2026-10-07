@@ -27,6 +27,7 @@ import {
     netsuiteAccountTermsPaymentHandler,
 } from './plugins/netsuite-sync/account-terms-payment';
 import { customFields } from './custom-fields';
+import {parseCorsOrigins, requireProductionValue} from './runtime-security';
 
 const IS_DEV = process.env.APP_ENV === 'dev';
 // PORT wins because hosting platforms inject it into the environment at runtime, and that
@@ -40,6 +41,30 @@ const localImagesPath = configuredLocalImages
 const storefrontUrl = (IS_DEV
     ? process.env.STOREFRONT_URL?.trim() || 'http://localhost:3001'
     : requiredProductionEnv('STOREFRONT_URL')).replace(/\/$/, '');
+const corsOrigins = parseCorsOrigins(
+    process.env.CORS_ORIGINS,
+    IS_DEV ? [new URL(storefrontUrl).origin] : [],
+);
+const cookieSecret = IS_DEV
+    ? process.env.COOKIE_SECRET
+    : requireProductionValue('COOKIE_SECRET', process.env.COOKIE_SECRET, {
+        minLength: 32,
+        rejectedValues: [
+            'replace-with-a-long-random-value',
+            'replace-with-at-least-32-random-characters',
+        ],
+    });
+const superadminUsername = IS_DEV
+    ? process.env.SUPERADMIN_USERNAME
+    : requireProductionValue('SUPERADMIN_USERNAME', process.env.SUPERADMIN_USERNAME, {
+        rejectedValues: ['replace-with-admin-username'],
+    });
+const superadminPassword = IS_DEV
+    ? process.env.SUPERADMIN_PASSWORD
+    : requireProductionValue('SUPERADMIN_PASSWORD', process.env.SUPERADMIN_PASSWORD, {
+        minLength: 16,
+        rejectedValues: ['superadmin', 'replace-me', 'replace-with-at-least-16-characters'],
+    });
 const emailTransport=process.env.EMAIL_TRANSPORT?.trim().toLowerCase()||(IS_DEV?'file':'microsoft-graph');
 if(emailTransport!=='file'&&emailTransport!=='microsoft-graph'){
     throw new Error('EMAIL_TRANSPORT must be file or microsoft-graph.');
@@ -88,9 +113,10 @@ export const config: VendureConfig = {
         // "https://example.com,https://admin.example.com". An unset value blocks all
         // cross-origin browser requests, which is the safe default.
         cors: {
-            origin: IS_DEV ? true : (process.env.CORS_ORIGINS?.split(',').map(o => o.trim()).filter(Boolean) ?? []),
+            origin: corsOrigins,
             credentials: true,
         },
+        csrfPrevention: true,
         // The following options are useful in development mode,
         // but are best turned off for production for security
         // reasons.
@@ -102,11 +128,14 @@ export const config: VendureConfig = {
     authOptions: {
         tokenMethod: ['bearer', 'cookie'],
         superadminCredentials: {
-            identifier: process.env.SUPERADMIN_USERNAME,
-            password: process.env.SUPERADMIN_PASSWORD,
+            identifier: superadminUsername,
+            password: superadminPassword,
         },
         cookieOptions: {
-          secret: process.env.COOKIE_SECRET,
+            secret: cookieSecret,
+            httpOnly: true,
+            sameSite: 'lax',
+            secure: !IS_DEV,
         },
     },
     dbConnectionOptions: {

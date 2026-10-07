@@ -271,3 +271,11 @@ Eligibility requires an active Vendure customer linked to an active, web-enabled
 The handler authorizes exactly the complete Vendure order total, records a stable `NETSUITE-TERMS-<order code>` transaction reference, and retains the immutable NetSuite customer and contact IDs in payment metadata. It deliberately refuses local settlement because invoice payment and settlement remain authoritative in NetSuite; Vendure can cancel an authorization when its order lifecycle requires it.
 
 Local migration and API verification confirmed the registered handler and checker, the **Janvey Account Terms** presentation, and no eligible method for an anonymous session. Twelve focused account-terms and B2B policy tests passed, including guest, unlinked, approval-required, partial-amount, authorization, settlement, and cancellation boundaries. The database verifier now reports payment-method configuration alongside the existing catalog and export audit.
+
+### Production API security baseline (2026-10-07)
+
+Vendure's built-in GraphQL CSRF prevention is enabled for the Shop and Admin APIs. The Next.js storefront already sends GraphQL operations as `application/json`, and Vendure's Dashboard supports the required preflight header for multipart uploads. A live local check rejected a simple URL-encoded GraphQL form post with HTTP 400 while accepting the normal JSON request with HTTP 200.
+
+CORS now uses an explicit normalized origin list in every environment. Development defaults to the configured storefront origin; production uses only `CORS_ORIGINS` and otherwise sends no cross-origin allow header. Live preflight checks returned `Access-Control-Allow-Origin` for `http://localhost:3001` and omitted it for an untrusted origin.
+
+Production startup validates `COOKIE_SECRET`, `SUPERADMIN_USERNAME`, and `SUPERADMIN_PASSWORD`. The cookie secret must contain at least 32 characters, the superadmin password at least 16, and known scaffold/default placeholders are rejected. Production session cookies are HTTP-only, secure, and SameSite Lax. The safe configuration contract is documented in `apps/server/.env.example` and `apps/server/README.md`; actual credentials remain untracked.

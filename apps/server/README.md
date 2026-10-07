@@ -49,7 +49,19 @@ server sends no `Access-Control-Allow-Origin` header and a separately hosted sto
 gets a CORS error on every request. The dashboard served by the `DashboardPlugin` runs on the same
 origin as the API, so it is not affected.
 
-In development (`APP_ENV=dev`) any origin is allowed, so you do not need to set this locally.
+In development (`APP_ENV=dev`) the configured storefront URL is allowed by default. Set
+`CORS_ORIGINS` when another local browser origin also needs API access.
+
+### API and credential security
+
+Vendure's GraphQL CSRF prevention is enabled for both APIs. Normal JSON requests are accepted;
+custom multipart-upload or GraphQL GET clients must send `Apollo-Require-Preflight: true`.
+
+Production (`APP_ENV` other than `dev`) refuses to start unless `COOKIE_SECRET`,
+`SUPERADMIN_USERNAME`, and `SUPERADMIN_PASSWORD` are configured. The cookie secret must contain at
+least 32 characters and the superadmin password at least 16 characters. Known example and Vendure
+default passwords are rejected. Production session cookies are HTTP-only, secure, and SameSite Lax.
+Use deployment-platform secrets for these values and never commit them.
 
 ### Running directly
 
