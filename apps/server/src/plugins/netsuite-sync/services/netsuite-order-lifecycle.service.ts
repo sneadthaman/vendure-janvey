@@ -72,7 +72,11 @@ export class NetsuiteOrderLifecycleService {
         if(!record.lifecycleJson)return false;
         try{
             const snapshot=JSON.parse(record.lifecycleJson) as NetsuiteSalesOrderLifecycleResponse;
-            return ['C','G','H'].includes(snapshot.salesOrder.statusCode||'');
+            const salesOrderStatus=snapshot.salesOrder.statusCode||'';
+            if(['C','H'].includes(salesOrderStatus))return true;
+            if(salesOrderStatus!=='G'||snapshot.invoices.length===0)return false;
+            const terminalInvoiceStatuses=new Set(['paid in full','voided']);
+            return snapshot.invoices.every(invoice=>terminalInvoiceStatuses.has((invoice.statusText||'').trim().toLowerCase()));
         }catch{return false;}
     }
 
