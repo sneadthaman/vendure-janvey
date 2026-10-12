@@ -1,7 +1,7 @@
 'use client';
 
 import {use} from 'react';
-import {ChevronLeft} from 'lucide-react';
+import {ChevronLeft, FileText, PackageCheck, Truck} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
 import {Separator} from '@/components/ui/separator';
@@ -30,6 +30,7 @@ export function OrderDetail({orderPromise}: OrderDetailProps) {
     const locale = useLocale();
     const t = useTranslations('Account');
     const order = data.netsuiteAccountOrder;
+    const lifecycle = data.netsuiteOrderLifecycle;
 
     if (!order) {
         return null;
@@ -134,6 +135,37 @@ export function OrderDetail({orderPromise}: OrderDetailProps) {
                 </div>
 
                 <div className="space-y-6">
+                    {lifecycle && (
+                        <Card>
+                            <CardHeader><CardTitle className="flex items-center gap-2"><PackageCheck className="size-5 text-[#174a78]"/>{t('netsuiteOrderProgress')}</CardTitle></CardHeader>
+                            <CardContent className="space-y-4 text-sm">
+                                <div className="flex items-start justify-between gap-4">
+                                    <div>
+                                        <p className="font-medium">{lifecycle.salesOrder.statusText || t('statusUnavailable')}</p>
+                                        {lifecycle.salesOrder.transactionId && <p className="text-muted-foreground">{t('netsuiteOrderNumber', {number: lifecycle.salesOrder.transactionId})}</p>}
+                                    </div>
+                                    <Badge variant="secondary">{t('synced')}</Badge>
+                                </div>
+                                {lifecycle.fulfillments.length > 0 && <div className="space-y-3 border-t pt-4">
+                                    <p className="flex items-center gap-2 font-semibold"><Truck className="size-4 text-[#174a78]"/>{t('shipments')}</p>
+                                    {lifecycle.fulfillments.map(fulfillment => <div key={fulfillment.internalId} className="rounded-md bg-slate-50 p-3">
+                                        <div className="flex justify-between gap-3"><span className="font-medium">{fulfillment.transactionId || t('shipment')}</span><span>{fulfillment.statusText}</span></div>
+                                        {fulfillment.shipDate && <p className="text-muted-foreground">{t('shippedOn', {date: formatDate(fulfillment.shipDate, 'long', locale)})}</p>}
+                                        {fulfillment.trackingNumbers && <p className="mt-1 break-all"><span className="text-muted-foreground">{t('tracking')}:</span> {fulfillment.trackingNumbers}</p>}
+                                    </div>)}
+                                </div>}
+                                {lifecycle.invoices.length > 0 && <div className="space-y-3 border-t pt-4">
+                                    <p className="flex items-center gap-2 font-semibold"><FileText className="size-4 text-[#174a78]"/>{t('invoices')}</p>
+                                    {lifecycle.invoices.map(invoice => <div key={invoice.internalId} className="rounded-md bg-slate-50 p-3">
+                                        <div className="flex justify-between gap-3"><span className="font-medium">{invoice.transactionId || t('invoice')}</span>{invoice.totalCents !== null && <Price value={invoice.totalCents} currencyCode={order.currencyCode}/>}</div>
+                                        <p className="text-muted-foreground">{invoice.statusText}</p>
+                                        {invoice.dueDate && <p className="text-muted-foreground">{t('dueOn', {date: formatDate(invoice.dueDate, 'long', locale)})}</p>}
+                                    </div>)}
+                                </div>}
+                                <p className="border-t pt-3 text-xs text-muted-foreground">{t('lastSynced', {date: formatDate(lifecycle.syncedAt, 'long', locale)})}</p>
+                            </CardContent>
+                        </Card>
+                    )}
                     {order.customer && (
                         <Card>
                             <CardHeader><CardTitle>{t('orderedBy')}</CardTitle></CardHeader>

@@ -6,7 +6,7 @@
  * Deploy this separately from the read-only catalog/customer RESTlets and grant
  * its integration role only the transaction and record permissions it needs.
  */
-define(['N/record','N/search','N/runtime','N/log'],(record,search,runtime,log)=>{
+define(['N/record','N/search','N/query','N/runtime','N/log'],(record,search,query,runtime,log)=>{
   const CONTRACT_VERSION=1;
   const MAX_LINES=200;
 
@@ -114,16 +114,106 @@ define(['N/record','N/search','N/runtime','N/log'],(record,search,runtime,log)=>
   function resultFor(internalId,externalId,idempotent,dryRun){
     if(dryRun)return {success:true,contractVersion:CONTRACT_VERSION,dryRun:true,idempotent,internalId:null,transactionId:null,externalId,subtotalCents:null,shippingCents:null,taxCents:null,totalCents:null,remainingUsage:runtime.getCurrentScript().getRemainingUsage()};
     const salesOrder=record.load({type:record.Type.SALES_ORDER,id:internalId,isDynamic:false});
+    const vendureOrderCode=String(salesOrder.getValue({fieldId:'custbody_vendure_order_id'})||'').trim();
+    const expectedOrderCode=externalId.indexOf('VENDURE-')===0?externalId.slice('VENDURE-'.length):'';
+    if(vendureOrderCode&&expectedOrderCode&&vendureOrderCode!==expectedOrderCode)throw new Error('Existing Sales Order has a different Vendure Order ID');
     return {success:true,contractVersion:CONTRACT_VERSION,dryRun:false,idempotent,internalId:String(internalId),transactionId:String(salesOrder.getValue({fieldId:'tranid'})||''),externalId,
       subtotalCents:moneyToCents(salesOrder.getValue({fieldId:'subtotal'})),shippingCents:moneyToCents(salesOrder.getValue({fieldId:'shippingcost'}),true),
       taxCents:moneyToCents(salesOrder.getValue({fieldId:'taxtotal'})),totalCents:moneyToCents(salesOrder.getValue({fieldId:'total'})),remainingUsage:runtime.getCurrentScript().getRemainingUsage()};
+  }
+
+  function text(value){
+    if(value===null||value===undefined)return null;
+    const normalized=String(value).trim();
+    return normalized||null;
+  }
+
+  function salesOrderLifecycle(value){
+    const internalId=requiredId(value,'salesOrderInternalId');
+    const salesOrder=record.load({type:record.Type.SALES_ORDER,id:internalId,isDynamic:false});
+    const externalId=text(salesOrder.getValue({fieldId:'externalid'}));
+    if(!externalId||externalId.indexOf('VENDURE-')!==0)throw new Error('Sales Order is not a Vendure web order');
+
+    const fulfillments=[];
+    search.create({
+      type:search.Type.ITEM_FULFILLMENT,
+      filters:[['mainline','is','T'],'AND',['createdfrom','anyof',internalId]],
+      columns:['internalid','tranid','statusref','shipdate','trackingnumbers','lastmodifieddate'],
+    }).run().each(result=>{
+      fulfillments.push({
+        internalId:String(result.getValue({name:'internalid'})||''),
+        transactionId:text(result.getValue({name:'tranid'})),
+        statusCode:text(result.getValue({name:'statusref'})),
+        statusText:text(result.getText({name:'statusref'})),
+        shipDate:text(result.getValue({name:'shipdate'})),
+        trackingNumbers:text(result.getValue({name:'trackingnumbers'})),
+        lastModifiedAt:text(result.getValue({name:'lastmodifieddate'})),
+      });
+      return fulfillments.length<200;
+    });
+
+    const invoiceIds=query.runSuiteQL({
+      query:`
+        SELECT DISTINCT linked.invoice_id
+        FROM (
+          SELECT direct.nextdoc AS invoice_id
+          FROM PreviousTransactionLineLink direct
+          JOIN transaction invoice ON invoice.id = direct.nextdoc
+          WHERE direct.previousdoc = ? AND invoice.type = 'CustInvc'
+          UNION
+          SELECT fulfillment_to_invoice.nextdoc AS invoice_id
+          FROM PreviousTransactionLineLink sales_order_to_fulfillment
+          JOIN transaction fulfillment
+            ON fulfillment.id = sales_order_to_fulfillment.nextdoc
+           AND fulfillment.type = 'ItemShip'
+          JOIN PreviousTransactionLineLink fulfillment_to_invoice
+            ON fulfillment_to_invoice.previousdoc = fulfillment.id
+          JOIN transaction invoice ON invoice.id = fulfillment_to_invoice.nextdoc
+           AND invoice.type = 'CustInvc'
+          WHERE sales_order_to_fulfillment.previousdoc = ?
+        ) linked
+        WHERE linked.invoice_id IS NOT NULL
+        ORDER BY linked.invoice_id`,
+      params:[Number(internalId),Number(internalId)],
+    }).asMappedResults().map(row=>String(row.invoice_id||row.INVOICE_ID||'')).filter(id=>/^\d+$/.test(id));
+
+    const invoices=invoiceIds.slice(0,200).map(invoiceId=>{
+      const invoice=record.load({type:record.Type.INVOICE,id:invoiceId,isDynamic:false});
+      return {
+        internalId:invoiceId,
+        transactionId:text(invoice.getValue({fieldId:'tranid'})),
+        statusText:text(invoice.getValue({fieldId:'status'})),
+        invoiceDate:text(invoice.getValue({fieldId:'trandate'})),
+        dueDate:text(invoice.getValue({fieldId:'duedate'})),
+        totalCents:moneyToCents(invoice.getValue({fieldId:'total'})),
+        lastModifiedAt:text(invoice.getValue({fieldId:'lastmodifieddate'})),
+      };
+    });
+
+    return {
+      success:true,
+      contractVersion:1,
+      salesOrder:{
+        internalId,
+        transactionId:text(salesOrder.getValue({fieldId:'tranid'})),
+        externalId,
+        vendureOrderCode:text(salesOrder.getValue({fieldId:'custbody_vendure_order_id'})),
+        statusCode:text(salesOrder.getValue({fieldId:'orderstatus'})),
+        statusText:text(salesOrder.getValue({fieldId:'status'})),
+        orderDate:text(salesOrder.getValue({fieldId:'trandate'})),
+        lastModifiedAt:text(salesOrder.getValue({fieldId:'lastmodifieddate'})),
+      },
+      fulfillments,
+      invoices,
+      remainingUsage:runtime.getCurrentScript().getRemainingUsage(),
+    };
   }
 
   function createSalesOrder(payload){
     const salesOrder=record.create({type:record.Type.SALES_ORDER,isDynamic:true});
     salesOrder.setValue({fieldId:'entity',value:payload.customerInternalId});
     salesOrder.setValue({fieldId:'externalid',value:payload.externalId});
-    salesOrder.setValue({fieldId:'memo',value:payload.memo});
+    salesOrder.setValue({fieldId:'custbody_vendure_order_id',value:payload.vendureOrderCode});
     salesOrder.setValue({fieldId:'shipaddresslist',value:payload.shippingAddressInternalId});
     salesOrder.setValue({fieldId:'billaddresslist',value:payload.billingAddressInternalId});
     if(payload.contactInternalId)salesOrder.setValue({fieldId:'contact',value:payload.contactInternalId});
@@ -158,7 +248,8 @@ define(['N/record','N/search','N/runtime','N/log'],(record,search,runtime,log)=>
     }
   }
 
-  function get(){
+  function get(params){
+    if(params&&params.salesOrderInternalId)return JSON.stringify(salesOrderLifecycle(params.salesOrderInternalId));
     const shippingItems=[];
     search.create({type:search.Type.SHIP_ITEM,filters:[['isinactive','is','F']],columns:['internalid','itemid']}).run().each(result=>{
       shippingItems.push({internalId:String(result.getValue({name:'internalid'})||''),name:String(result.getValue({name:'itemid'})||'')});

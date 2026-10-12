@@ -5,13 +5,14 @@ import crypto from 'crypto-js';
 import { lstat, readdir, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import { NETSUITE_SYNC_PLUGIN_OPTIONS } from '../constants';
-import { NetsuiteWebStoreItem, NetsuiteWebStoreItemsResponse, NetsuitePricesResponse, NetsuitePrice, NetsuiteImagesResponse, NetsuiteImageFile, PluginInitOptions, NetsuiteCustomerResponse, NetsuiteCustomerCandidate, NetsuiteCustomerSearchResponse, NetsuiteSalesOrderRequest, NetsuiteSalesOrderResponse } from '../types';
+import { NetsuiteWebStoreItem, NetsuiteWebStoreItemsResponse, NetsuitePricesResponse, NetsuitePrice, NetsuiteImagesResponse, NetsuiteImageFile, PluginInitOptions, NetsuiteCustomerResponse, NetsuiteCustomerCandidate, NetsuiteCustomerSearchResponse, NetsuiteSalesOrderRequest, NetsuiteSalesOrderResponse, NetsuiteSalesOrderLifecycleResponse } from '../types';
 
 @Injectable()
 export class NetsuiteService {
     constructor(@Inject(NETSUITE_SYNC_PLUGIN_OPTIONS) private readonly options: PluginInitOptions) {}
 
     get orderExportConfigured(){return Boolean(this.options.ordersUrl)&&this.orderExportMode!=='disabled';}
+    get orderLifecycleConfigured(){return Boolean(this.options.ordersUrl);}
     get orderExportMode(){return this.options.orderExportMode??'disabled';}
     get shippingMethodInternalId(){return this.options.shippingMethodInternalId?.trim()||null;}
 
@@ -109,6 +110,34 @@ export class NetsuiteService {
             typeof result.idempotent!=='boolean'||cents.some(value=>value!==null&&(!Number.isSafeInteger(value)||value<0))||
             (!payload.dryRun&&(!result.internalId||!/^\d+$/.test(result.internalId)||cents.some(value=>value===null)))){
             throw new Error('Invalid NetSuite sales-order response.');
+        }
+        return result;
+    }
+
+    async fetchSalesOrderLifecycle(internalId:string):Promise<NetsuiteSalesOrderLifecycleResponse>{
+        if(!this.orderLifecycleConfigured)throw new Error('NetSuite order lifecycle endpoint is not configured.');
+        if(!/^\d+$/.test(internalId))throw new Error('NetSuite Sales Order ID must be numeric.');
+        const raw=await this.request<NetsuiteSalesOrderLifecycleResponse|string>(this.options.ordersUrl,'GET',{salesOrderInternalId:internalId});
+        let result:NetsuiteSalesOrderLifecycleResponse;
+        try{result=typeof raw==='string'?JSON.parse(raw) as NetsuiteSalesOrderLifecycleResponse:raw;}
+        catch{throw new Error('Invalid NetSuite order lifecycle response.');}
+        const order=result?.salesOrder;
+        const validText=(value:unknown)=>value===null||typeof value==='string'&&value.length<=1000;
+        const validDate=(value:unknown)=>validText(value)&&!(typeof value==='string'&&Number.isNaN(Date.parse(value)));
+        const validFulfillment=(value:NetsuiteSalesOrderLifecycleResponse['fulfillments'][number])=>Boolean(value&&/^\d+$/.test(value.internalId)&&
+            [value.transactionId,value.statusCode,value.statusText,value.trackingNumbers].every(validText)&&
+            [value.shipDate,value.lastModifiedAt].every(validDate));
+        const validInvoice=(value:NetsuiteSalesOrderLifecycleResponse['invoices'][number])=>Boolean(value&&/^\d+$/.test(value.internalId)&&
+            [value.transactionId,value.statusText].every(validText)&&[value.invoiceDate,value.dueDate,value.lastModifiedAt].every(validDate)&&
+            (value.totalCents===null||Number.isSafeInteger(value.totalCents)&&value.totalCents>=0));
+        if(result?.success!==true||result.contractVersion!==1||!order||order.internalId!==internalId||
+            !/^VENDURE-[A-Za-z0-9._-]+$/.test(order.externalId)||order.vendureOrderCode!==order.externalId.slice('VENDURE-'.length)||
+            ![order.transactionId,order.statusCode,order.statusText].every(validText)||![order.orderDate,order.lastModifiedAt].every(validDate)||
+            !Array.isArray(result.fulfillments)||result.fulfillments.length>200||!result.fulfillments.every(validFulfillment)||
+            !Array.isArray(result.invoices)||result.invoices.length>200||!result.invoices.every(validInvoice)||
+            new Set(result.fulfillments.map(value=>value.internalId)).size!==result.fulfillments.length||
+            new Set(result.invoices.map(value=>value.internalId)).size!==result.invoices.length){
+            throw new Error('Invalid NetSuite order lifecycle response.');
         }
         return result;
     }

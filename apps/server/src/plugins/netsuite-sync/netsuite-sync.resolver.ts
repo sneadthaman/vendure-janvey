@@ -7,6 +7,7 @@ import {ID} from '@vendure/common/lib/shared-types';
 import {NetsuiteApprovalService} from './services/netsuite-approval.service';
 import {NetsuiteInvitationService} from './services/netsuite-invitation.service';
 import {NetsuiteOrderExportService} from './services/netsuite-order-export.service';
+import {NetsuiteOrderLifecycleService} from './services/netsuite-order-lifecycle.service';
 
 export const netsuiteAdminSchema=gql`
     type NetsuiteSyncRun implements Node {
@@ -191,12 +192,13 @@ export const netsuiteAdminSchema=gql`
         resolveNetsuiteApprovalOrder(id: ID!, action: String!, comment: String): AdminNetsuiteOrderApproval!
         retryNetsuiteOrderExport(id: ID!): NetsuiteOrderExport!
         reconcileNetsuiteOrderExport(orderId: ID!): NetsuiteOrderExport!
+        refreshNetsuiteOrderLifecycle(orderId: ID!): JSON!
     }
 `;
 
 @Resolver()
 export class NetsuiteSyncResolver {
-    constructor(private sync:NetsuiteSyncService,private customers:NetsuiteCustomerService,private approvals:NetsuiteApprovalService,private invitations:NetsuiteInvitationService,private orderExports:NetsuiteOrderExportService){}
+    constructor(private sync:NetsuiteSyncService,private customers:NetsuiteCustomerService,private approvals:NetsuiteApprovalService,private invitations:NetsuiteInvitationService,private orderExports:NetsuiteOrderExportService,private orderLifecycle:NetsuiteOrderLifecycleService){}
     @Query()
     @Allow(Permission.SuperAdmin)
     netsuiteSyncRuns(@Ctx() ctx:RequestContext){return this.sync.list(ctx);}
@@ -257,4 +259,7 @@ export class NetsuiteSyncResolver {
     @Mutation()
     @Allow(Permission.SuperAdmin)
     reconcileNetsuiteOrderExport(@Ctx() ctx:RequestContext,@Args('orderId') orderId:ID){return this.orderExports.reconcile(ctx,orderId);}
+    @Mutation()
+    @Allow(Permission.SuperAdmin)
+    refreshNetsuiteOrderLifecycle(@Ctx() ctx:RequestContext,@Args('orderId') orderId:ID){return this.orderLifecycle.refreshOrder(ctx,orderId);}
 }

@@ -23,6 +23,7 @@ declare global {
             M365_CLIENT_SECRET?: string;
             M365_SENDER_MAILBOX?: string;
             NETSUITE_CUSTOMER_REFRESH_CRON?: string;
+            NETSUITE_ORDER_LIFECYCLE_CRON?: string;
             NETSUITE_INVITATION_TTL_HOURS?: string;
             DB_HOST: string;
             DB_PORT: number;

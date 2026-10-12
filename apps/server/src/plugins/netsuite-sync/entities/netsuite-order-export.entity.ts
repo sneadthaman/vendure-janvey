@@ -55,4 +55,13 @@ export class NetsuiteOrderExport extends VendureEntity {
 
     @Column({type:'timestamp',nullable:true})
     exportedAt:Date|null;
+
+    @Column({type:'text',nullable:true})
+    lifecycleJson:string|null;
+
+    @Column({type:'timestamp',nullable:true})
+    lifecycleSyncedAt:Date|null;
+
+    @Column({type:'text',nullable:true})
+    lifecycleLastError:string|null;
 }

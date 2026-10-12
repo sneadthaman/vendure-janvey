@@ -2,7 +2,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 require('ts-node').register({project:require('node:path').resolve(__dirname,'../apps/server/tsconfig.json')});
 const {NetsuiteService}=require('../apps/server/src/plugins/netsuite-sync/services/netsuite.service');
-function client(responder) {const c=new NetsuiteService({});c.request=responder;return c;}
+function client(responder) {const c=new NetsuiteService({ordersUrl:'https://example.restlets.api.netsuite.com/app/site/hosting/restlet.nl'});c.request=responder;return c;}
 const row=id=>({internalid:String(id)});
 test('catalog pages require stable totals before reconciliation is safe',async()=>{
     const c=client(async(_,__,p)=>{const offset=Number(p.offset);const items=offset===0?Array.from({length:100},(_,i)=>row(i)): [row(100)];return {offset,limit:100,count:items.length,total:101,items};});
@@ -59,4 +59,14 @@ test('sales-order export preserves dry-run mode and validates live transaction t
     assert.equal((await c.exportSalesOrder(request)).dryRun,true);
     const invalid=client(async()=>({success:true,contractVersion:1,dryRun:false,idempotent:false,internalId:'44',transactionId:'SO1',externalId:'VENDURE-ABC123',subtotalCents:100,shippingCents:0,taxCents:null,totalCents:100}));
     await assert.rejects(invalid.exportSalesOrder({...request,dryRun:false}),/Invalid NetSuite sales-order response/);
+});
+test('sales-order lifecycle validates the Vendure identity and related transaction data',async()=>{
+    const response={success:true,contractVersion:1,salesOrder:{internalId:'204855',transactionId:'SO310591',externalId:'VENDURE-ABC123',vendureOrderCode:'ABC123',statusCode:'B',statusText:'Pending Fulfillment',orderDate:'2026-10-07T07:00:00.000Z',lastModifiedAt:'2026-10-12T14:41:00.000Z'},
+        fulfillments:[{internalId:'500',transactionId:'IF123',statusCode:'picked',statusText:'Picked',shipDate:'2026-10-08T07:00:00.000Z',trackingNumbers:'TRACK-1',lastModifiedAt:'2026-10-08T12:00:00.000Z'}],
+        invoices:[{internalId:'700',transactionId:'INV123',statusText:'Open',invoiceDate:'2026-10-08T07:00:00.000Z',dueDate:'2026-11-07T08:00:00.000Z',totalCents:14860,lastModifiedAt:'2026-10-08T12:00:00.000Z'}]};
+    const c=client(async(_,method,params)=>{assert.equal(method,'GET');assert.deepEqual(params,{salesOrderInternalId:'204855'});return JSON.stringify(response);});
+    assert.equal((await c.fetchSalesOrderLifecycle('204855')).salesOrder.transactionId,'SO310591');
+    await assert.rejects(c.fetchSalesOrderLifecycle('SO310591'),/numeric/);
+    const mismatch=client(async()=>({...response,salesOrder:{...response.salesOrder,vendureOrderCode:'OTHER'}}));
+    await assert.rejects(mismatch.fetchSalesOrderLifecycle('204855'),/Invalid NetSuite order lifecycle response/);
 });

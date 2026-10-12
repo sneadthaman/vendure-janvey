@@ -84,6 +84,30 @@ export const GetAccountOrdersQuery = graphql(`
 
 export const GetAccountOrderDetailQuery = graphql(`
     query GetAccountOrderDetail($code: String!) {
+        netsuiteOrderLifecycle(code: $code) {
+            syncedAt
+            salesOrder {
+                transactionId
+                statusText
+                orderDate
+                lastModifiedAt
+            }
+            fulfillments {
+                internalId
+                transactionId
+                statusText
+                shipDate
+                trackingNumbers
+            }
+            invoices {
+                internalId
+                transactionId
+                statusText
+                invoiceDate
+                dueDate
+                totalCents
+            }
+        }
         netsuiteAccountOrder(code: $code) {
             id
             code

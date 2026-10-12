@@ -175,6 +175,44 @@ export interface NetsuiteSalesOrderResponse {
   remainingUsage?:number;
 }
 
+export interface NetsuiteOrderFulfillment {
+  internalId:string;
+  transactionId:string|null;
+  statusCode:string|null;
+  statusText:string|null;
+  shipDate:string|null;
+  trackingNumbers:string|null;
+  lastModifiedAt:string|null;
+}
+
+export interface NetsuiteOrderInvoice {
+  internalId:string;
+  transactionId:string|null;
+  statusText:string|null;
+  invoiceDate:string|null;
+  dueDate:string|null;
+  totalCents:number|null;
+  lastModifiedAt:string|null;
+}
+
+export interface NetsuiteSalesOrderLifecycleResponse {
+  success:boolean;
+  contractVersion:1;
+  salesOrder:{
+    internalId:string;
+    transactionId:string|null;
+    externalId:string;
+    vendureOrderCode:string|null;
+    statusCode:string|null;
+    statusText:string|null;
+    orderDate:string|null;
+    lastModifiedAt:string|null;
+  };
+  fulfillments:NetsuiteOrderFulfillment[];
+  invoices:NetsuiteOrderInvoice[];
+  remainingUsage?:number;
+}
+
 export interface NetsuiteCustomerAddress {
   internalId:string|null;
   label:string|null;

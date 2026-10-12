@@ -7,8 +7,43 @@ import gql from 'graphql-tag';
 import {PendingOrderChanges,NetsuiteApprovalService} from './services/netsuite-approval.service';
 import {NetsuitePricingService} from './services/netsuite-pricing.service';
 import {NetsuiteInvitationService} from './services/netsuite-invitation.service';
+import {NetsuiteOrderLifecycleService} from './services/netsuite-order-lifecycle.service';
 
 export const netsuiteShopSchema=gql`
+    type ShopNetsuiteSalesOrderStatus {
+        internalId: String!
+        transactionId: String
+        externalId: String!
+        vendureOrderCode: String
+        statusCode: String
+        statusText: String
+        orderDate: DateTime
+        lastModifiedAt: DateTime
+    }
+    type ShopNetsuiteFulfillment {
+        internalId: String!
+        transactionId: String
+        statusCode: String
+        statusText: String
+        shipDate: DateTime
+        trackingNumbers: String
+        lastModifiedAt: DateTime
+    }
+    type ShopNetsuiteInvoice {
+        internalId: String!
+        transactionId: String
+        statusText: String
+        invoiceDate: DateTime
+        dueDate: DateTime
+        totalCents: Money
+        lastModifiedAt: DateTime
+    }
+    type ShopNetsuiteOrderLifecycle {
+        salesOrder: ShopNetsuiteSalesOrderStatus!
+        fulfillments: [ShopNetsuiteFulfillment!]!
+        invoices: [ShopNetsuiteInvoice!]!
+        syncedAt: DateTime!
+    }
     type ActiveNetsuitePrice {
         sku: String!
         price: Money
@@ -102,6 +137,7 @@ export const netsuiteShopSchema=gql`
         netsuiteApprovalOrder(id: ID!): ShopNetsuiteOrderApproval!
         netsuiteAccountOrders(options: OrderListOptions): ShopNetsuiteOrderList!
         netsuiteAccountOrder(code: String!): Order
+        netsuiteOrderLifecycle(code: String!): ShopNetsuiteOrderLifecycle
         netsuiteInvitation(token: String!): NetsuiteInvitationPreview!
     }
     extend type Mutation {
@@ -117,7 +153,7 @@ export const netsuiteShopSchema=gql`
 
 @Resolver()
 export class NetsuiteB2bResolver {
-    constructor(private approvals:NetsuiteApprovalService,private pricing:NetsuitePricingService,private invitations:NetsuiteInvitationService){}
+    constructor(private approvals:NetsuiteApprovalService,private pricing:NetsuitePricingService,private invitations:NetsuiteInvitationService,private orderLifecycle:NetsuiteOrderLifecycleService){}
 
     @Query()
     @Allow(Permission.Public)
@@ -150,6 +186,13 @@ export class NetsuiteB2bResolver {
     @Query()
     @Allow(Permission.Authenticated)
     netsuiteAccountOrder(@Ctx() ctx:RequestContext,@Args('code') code:string,@Relations(Order) relations:RelationPaths<Order>){return this.approvals.accountOrderByCode(ctx,code,relations);}
+
+    @Query()
+    @Allow(Permission.Authenticated)
+    async netsuiteOrderLifecycle(@Ctx() ctx:RequestContext,@Args('code') code:string){
+        const order=await this.approvals.accountOrderByCode(ctx,code,[]);
+        return this.orderLifecycle.forOrder(ctx,order.id);
+    }
 
     @Mutation()
     @Allow(Permission.Authenticated)

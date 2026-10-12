@@ -73,3 +73,13 @@ Migration `1789680000000-netsuite-order-exports.ts` creates the durable export l
 Use `NETSUITE-LIVE-ORDER-EXPORT-RUNBOOK.md` for the first controlled live order, including the exact candidate, stop conditions, recovery rules, and rollback to dry-run.
 
 The first live order completed on October 7, 2026 as NetSuite transaction `SO310591` / internal ID `204855`. Its idempotent recovery also verified the lost-or-invalid-response procedure: search the external ID first, correct the response contract, and only then retry so the existing transaction is returned.
+
+## Read-only order lifecycle
+
+The same RESTlet now accepts `GET salesOrderInternalId=<id>` and returns the matching Vendure Sales Order status, Item Fulfillments, tracking numbers, and related invoices without changing NetSuite. It rejects Sales Orders whose standard `externalid` does not start with `VENDURE-`.
+
+New Sales Orders store the raw Vendure order code in `custbody_vendure_order_id`; the standard `externalid` remains the idempotency key. The integration does not populate Memo.
+
+Vendure stores the last successful lifecycle response on the durable export ledger. The worker refreshes exported orders every 15 minutes by default; `NETSUITE_ORDER_LIFECYCLE_CRON` can override the schedule. Orders whose last snapshot is Cancelled, Billed, or Closed are no longer polled automatically. A failed refresh records the error without deleting the last successful customer-visible snapshot. Staff can force one order to refresh through the SuperAdmin-only `refreshNetsuiteOrderLifecycle(orderId: ID!)` mutation or `scripts/netsuite-order-lifecycle-refresh.cjs <vendure-order-code>`.
+
+Authenticated purchasers can see the NetSuite order number and status on their order detail. Approvers retain the same account-wide authorization boundary and can see shipment, tracking, and invoice details for orders belonging to their account only.

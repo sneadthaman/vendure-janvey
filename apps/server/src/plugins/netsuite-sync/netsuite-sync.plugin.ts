@@ -20,6 +20,8 @@ import {NetsuiteInvitationService} from './services/netsuite-invitation.service'
 import {NetsuiteActiveOrderPricingService} from './services/netsuite-active-order-pricing.service';
 import {NetsuiteOrderExportService} from './services/netsuite-order-export.service';
 import {RuntimeReadinessController} from './runtime-readiness.controller';
+import {NetsuiteOrderLifecycleService} from './services/netsuite-order-lifecycle.service';
+import {netsuiteOrderLifecycleTask} from './netsuite-order-lifecycle.task';
 
 @VendurePlugin({
     imports: [PluginCommonModule],
@@ -35,6 +37,7 @@ import {RuntimeReadinessController} from './runtime-readiness.controller';
         NetsuiteInvitationService,
         NetsuiteActiveOrderPricingService,
         NetsuiteOrderExportService,
+        NetsuiteOrderLifecycleService,
     ],
     entities: [NetsuiteSyncRun,NetsuiteAccount,NetsuiteAccountAddress,NetsuiteContactLink,NetsuiteContactInvitation,NetsuiteCustomerSyncRun,NetsuiteOrderApproval,NetsuiteOrderApprovalEvent,NetsuiteOrderExport],
     controllers: [RuntimeReadinessController],
@@ -50,7 +53,7 @@ import {RuntimeReadinessController} from './runtime-readiness.controller';
         config.shippingOptions.shippingCalculators.push(netsuiteAddressShippingCalculator);
         config.schedulerOptions={
             ...config.schedulerOptions,
-            tasks:[...(config.schedulerOptions?.tasks??[]),netsuiteCustomerRefreshTask],
+            tasks:[...(config.schedulerOptions?.tasks??[]),netsuiteCustomerRefreshTask,netsuiteOrderLifecycleTask],
         };
         return config;
     },
