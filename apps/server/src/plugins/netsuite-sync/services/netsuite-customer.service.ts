@@ -12,6 +12,7 @@ interface LinkInput {
     netsuiteContactId?:string|null;
     requiresApproval?:boolean;
     canApproveOrders?:boolean;
+    canViewInvoices?:boolean;
     defaultShippingAddressId?:ID|null;
 }
 
@@ -19,6 +20,7 @@ interface UpdateLinkInput {
     customerId:ID;
     requiresApproval?:boolean;
     canApproveOrders?:boolean;
+    canViewInvoices?:boolean;
     defaultShippingAddressId?:ID|null;
 }
 
@@ -159,7 +161,7 @@ export class NetsuiteCustomerService {
         if(existing)throw new Error('Vendure customer is already linked to a NetSuite account.');
         return repo.save(new NetsuiteContactLink({
             accountId:account.id,customerId:customer.id,netsuiteContactId:contactId,
-            requiresApproval:Boolean(input.requiresApproval),canApproveOrders:Boolean(input.canApproveOrders),
+            requiresApproval:Boolean(input.requiresApproval),canApproveOrders:Boolean(input.canApproveOrders),canViewInvoices:Boolean(input.canViewInvoices),
             active:true,eligibilityIssue:null,
             defaultShippingAddressId:input.defaultShippingAddressId??null,linkedByUserId:String(ctx.activeUserId),
         }));
@@ -173,6 +175,7 @@ export class NetsuiteCustomerService {
         await this.assertAddress(ctx,input.defaultShippingAddressId,link.accountId);
         if(input.requiresApproval!==undefined)link.requiresApproval=input.requiresApproval;
         if(input.canApproveOrders!==undefined)link.canApproveOrders=input.canApproveOrders;
+        if(input.canViewInvoices!==undefined)link.canViewInvoices=input.canViewInvoices;
         if(input.defaultShippingAddressId!==undefined)link.defaultShippingAddressId=input.defaultShippingAddressId;
         return repo.save(link);
     }

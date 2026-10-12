@@ -12,9 +12,10 @@ const loggerCtx='NetsuiteOrderLifecycle';
 export class NetsuiteOrderLifecycleService {
     constructor(private connection:TransactionalConnection,private client:NetsuiteService){}
 
-    async forOrder(ctx:RequestContext,orderId:ID){
+    async forOrder(ctx:RequestContext,orderId:ID,includeInvoices=false){
         const record=await this.connection.getRepository(ctx,NetsuiteOrderExport).findOneBy({orderId});
-        return record?this.view(record):null;
+        const lifecycle=record?this.view(record):null;
+        return lifecycle&& !includeInvoices?{...lifecycle,invoices:[]}:lifecycle;
     }
 
     async refreshOrder(ctx:RequestContext,orderId:ID){

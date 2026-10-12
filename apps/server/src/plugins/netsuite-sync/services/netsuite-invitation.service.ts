@@ -9,7 +9,7 @@ import {NetsuiteContactInvitationEvent} from '../netsuite-invitation.event';
 import {NetsuiteService} from './netsuite.service';
 import {NetsuiteActiveOrderPricingService} from './netsuite-active-order-pricing.service';
 
-interface InviteInput {accountId:ID;netsuiteContactId:string;requiresApproval?:boolean;canApproveOrders?:boolean;defaultShippingAddressId?:ID|null;}
+interface InviteInput {accountId:ID;netsuiteContactId:string;requiresApproval?:boolean;canApproveOrders?:boolean;canViewInvoices?:boolean;defaultShippingAddressId?:ID|null;}
 
 @Injectable()
 export class NetsuiteInvitationService {
@@ -38,7 +38,7 @@ export class NetsuiteInvitationService {
         const invitation=await repo.save(new NetsuiteContactInvitation({
             accountId:account.id,netsuiteContactId:contact.internalId,emailAddress,
             firstName:contact.firstName,lastName:contact.lastName,tokenHash:this.hash(token),
-            requiresApproval:Boolean(input.requiresApproval),canApproveOrders:Boolean(input.canApproveOrders),
+            requiresApproval:Boolean(input.requiresApproval),canApproveOrders:Boolean(input.canApproveOrders),canViewInvoices:Boolean(input.canViewInvoices),
             defaultShippingAddressId:input.defaultShippingAddressId??null,
             expiresAt:new Date(Date.now()+(Number.isFinite(ttl)&&ttl>0?ttl:168)*3_600_000),acceptedAt:null,revokedAt:null,acceptedByCustomerId:null,
             invitedByUserId:String(ctx.activeUserId),
@@ -68,7 +68,7 @@ export class NetsuiteInvitationService {
             if(!contact)throw new Error('This NetSuite contact is no longer eligible for web use.');
             await this.connection.getRepository(tx,NetsuiteContactLink).save(new NetsuiteContactLink({
                 accountId:invitation.accountId,customerId:customer.id,netsuiteContactId:invitation.netsuiteContactId,
-                requiresApproval:invitation.requiresApproval,canApproveOrders:invitation.canApproveOrders,
+                requiresApproval:invitation.requiresApproval,canApproveOrders:invitation.canApproveOrders,canViewInvoices:invitation.canViewInvoices,
                 active:true,eligibilityIssue:null,defaultShippingAddressId:invitation.defaultShippingAddressId,linkedByUserId:String(tx.activeUserId),
             }));
             invitation.acceptedAt=new Date();invitation.acceptedByCustomerId=customer.id;

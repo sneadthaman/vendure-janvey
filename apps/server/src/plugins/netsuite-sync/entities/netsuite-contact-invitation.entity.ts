@@ -18,6 +18,7 @@ export class NetsuiteContactInvitation extends VendureEntity {
     @Index({unique:true}) @Column({length:64}) tokenHash:string;
     @Column({default:false}) requiresApproval:boolean;
     @Column({default:false}) canApproveOrders:boolean;
+    @Column({default:false}) canViewInvoices:boolean;
     @ManyToOne(()=>NetsuiteAccountAddress,{nullable:true,onDelete:'SET NULL'}) @JoinColumn({name:'defaultShippingAddressId'}) defaultShippingAddress:NetsuiteAccountAddress|null;
     @Column({type:'integer',nullable:true}) defaultShippingAddressId:ID|null;
     @Column({type:'timestamp'}) expiresAt:Date;

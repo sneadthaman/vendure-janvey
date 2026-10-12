@@ -47,6 +47,7 @@ export const netsuiteAdminSchema=gql`
         netsuiteContactId: String
         requiresApproval: Boolean!
         canApproveOrders: Boolean!
+        canViewInvoices: Boolean!
         active: Boolean!
         eligibilityIssue: String
         defaultShippingAddress: NetsuiteAccountAddress
@@ -93,6 +94,7 @@ export const netsuiteAdminSchema=gql`
         lastName: String
         requiresApproval: Boolean!
         canApproveOrders: Boolean!
+        canViewInvoices: Boolean!
         defaultShippingAddress: NetsuiteAccountAddress
         expiresAt: DateTime!
         acceptedAt: DateTime
@@ -154,12 +156,14 @@ export const netsuiteAdminSchema=gql`
         netsuiteContactId: String
         requiresApproval: Boolean
         canApproveOrders: Boolean
+        canViewInvoices: Boolean
         defaultShippingAddressId: ID
     }
     input UpdateNetsuiteContactLinkInput {
         customerId: ID!
         requiresApproval: Boolean
         canApproveOrders: Boolean
+        canViewInvoices: Boolean
         defaultShippingAddressId: ID
     }
     input InviteNetsuiteContactInput {
@@ -167,6 +171,7 @@ export const netsuiteAdminSchema=gql`
         netsuiteContactId: String!
         requiresApproval: Boolean
         canApproveOrders: Boolean
+        canViewInvoices: Boolean
         defaultShippingAddressId: ID
     }
     extend type Query {
@@ -228,16 +233,16 @@ export class NetsuiteSyncResolver {
     syncNetsuiteCustomer(@Ctx() ctx:RequestContext,@Args('customerId') customerId:string){return this.customers.syncAccount(ctx,customerId);}
     @Mutation()
     @Allow(Permission.SuperAdmin)
-    async linkNetsuiteCustomer(@Ctx() ctx:RequestContext,@Args('input') input:{customerId:ID;accountId:ID;netsuiteContactId?:string;requiresApproval?:boolean;canApproveOrders?:boolean;defaultShippingAddressId?:ID}){await this.customers.linkCustomer(ctx,input);return true;}
+    async linkNetsuiteCustomer(@Ctx() ctx:RequestContext,@Args('input') input:{customerId:ID;accountId:ID;netsuiteContactId?:string;requiresApproval?:boolean;canApproveOrders?:boolean;canViewInvoices?:boolean;defaultShippingAddressId?:ID}){await this.customers.linkCustomer(ctx,input);return true;}
     @Mutation()
     @Allow(Permission.SuperAdmin)
-    async updateNetsuiteContactLink(@Ctx() ctx:RequestContext,@Args('input') input:{customerId:ID;requiresApproval?:boolean;canApproveOrders?:boolean;defaultShippingAddressId?:ID}){await this.customers.updateLink(ctx,input);return true;}
+    async updateNetsuiteContactLink(@Ctx() ctx:RequestContext,@Args('input') input:{customerId:ID;requiresApproval?:boolean;canApproveOrders?:boolean;canViewInvoices?:boolean;defaultShippingAddressId?:ID}){await this.customers.updateLink(ctx,input);return true;}
     @Mutation()
     @Allow(Permission.SuperAdmin)
     unlinkNetsuiteCustomer(@Ctx() ctx:RequestContext,@Args('customerId') customerId:ID){return this.customers.unlinkCustomer(ctx,customerId);}
     @Mutation()
     @Allow(Permission.SuperAdmin)
-    inviteNetsuiteContact(@Ctx() ctx:RequestContext,@Args('input') input:{accountId:ID;netsuiteContactId:string;requiresApproval?:boolean;canApproveOrders?:boolean;defaultShippingAddressId?:ID}){return this.invitations.invite(ctx,input);}
+    inviteNetsuiteContact(@Ctx() ctx:RequestContext,@Args('input') input:{accountId:ID;netsuiteContactId:string;requiresApproval?:boolean;canApproveOrders?:boolean;canViewInvoices?:boolean;defaultShippingAddressId?:ID}){return this.invitations.invite(ctx,input);}
     @Query()
     @Allow(Permission.SuperAdmin)
     netsuiteApprovalOrders(@Ctx() ctx:RequestContext,@Args('status') status?:string){return this.approvals.listForStaff(ctx,status);}

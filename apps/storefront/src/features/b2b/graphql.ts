@@ -7,6 +7,7 @@ export const ActiveNetsuiteAccountQuery=graphql(`
             companyName
             requiresApproval
             canApproveOrders
+            canViewInvoices
             defaultShippingAddressId
             addresses {
                 id label addressee attention streetLine1 streetLine2 city province postalCode countryCode phoneNumber

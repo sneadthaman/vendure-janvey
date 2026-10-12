@@ -72,6 +72,7 @@ export const netsuiteShopSchema=gql`
         companyName: String!
         requiresApproval: Boolean!
         canApproveOrders: Boolean!
+        canViewInvoices: Boolean!
         defaultShippingAddressId: ID
         addresses: [ShopNetsuiteAddress!]!
     }
@@ -191,7 +192,8 @@ export class NetsuiteB2bResolver {
     @Allow(Permission.Authenticated)
     async netsuiteOrderLifecycle(@Ctx() ctx:RequestContext,@Args('code') code:string){
         const order=await this.approvals.accountOrderByCode(ctx,code,[]);
-        return this.orderLifecycle.forOrder(ctx,order.id);
+        const account=await this.approvals.activeAccount(ctx);
+        return this.orderLifecycle.forOrder(ctx,order.id,Boolean(account?.canViewInvoices));
     }
 
     @Mutation()

@@ -38,6 +38,7 @@ export class NetsuiteApprovalService {
             companyName:link.account.companyName,
             requiresApproval:link.requiresApproval,
             canApproveOrders:link.canApproveOrders,
+            canViewInvoices:link.canViewInvoices,
             defaultShippingAddressId:link.defaultShippingAddressId,
             addresses:link.account.addresses.filter(address=>address.active),
         };

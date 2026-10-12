@@ -36,6 +36,19 @@ test('failed refresh preserves the last successful snapshot and records the erro
     assert.equal(value.saves.length,1);
 });
 
+test('customer lifecycle hides invoices unless the contact has invoice permission',async()=>{
+    const current=snapshot();
+    current.invoices=[{internalId:'205774',transactionId:'INV30244',statusText:'Open',invoiceDate:null,dueDate:null,totalCents:3133,lastModifiedAt:null}];
+    const value=fixture({});
+    value.record.lifecycleJson=JSON.stringify(current);
+    value.record.lifecycleSyncedAt=new Date('2026-10-12T15:48:19.694Z');
+
+    const restricted=await value.service.forOrder({},10);
+    const permitted=await value.service.forOrder({},10,true);
+    assert.deepEqual(restricted.invoices,[]);
+    assert.equal(permitted.invoices[0].transactionId,'INV30244');
+});
+
 test('scheduled refresh continues after billing until every invoice is terminal',async()=>{
     let requests=0;
     const current=snapshot();

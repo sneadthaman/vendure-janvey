@@ -34,6 +34,9 @@ export class NetsuiteContactLink extends VendureEntity {
     @Column({default:false})
     canApproveOrders:boolean;
 
+    @Column({default:false})
+    canViewInvoices:boolean;
+
     @Column({default:true})
     active:boolean;
 
