@@ -76,7 +76,7 @@ The first live order completed on October 7, 2026 as NetSuite transaction `SO310
 
 ## Read-only order lifecycle
 
-The same RESTlet now accepts `GET salesOrderInternalId=<id>` and returns the matching Vendure Sales Order status, Item Fulfillments, tracking numbers, and related invoices without changing NetSuite. It rejects Sales Orders whose standard `externalid` does not start with `VENDURE-`.
+The same RESTlet now accepts `GET salesOrderInternalId=<id>` and returns the matching Vendure Sales Order status, Item Fulfillments, tracking numbers, and related invoices without changing NetSuite. It rejects Sales Orders whose standard `externalid` does not start with `VENDURE-`. The integration role needs **Transactions > Item Fulfillment: View** and **Transactions > Fulfill Sales Orders: View**. Fulfillments are read with `N/search`, so Edit access is not required.
 
 New Sales Orders store the raw Vendure order code in `custbody_vendure_order_id`; the standard `externalid` remains the idempotency key. The integration does not populate Memo.
 

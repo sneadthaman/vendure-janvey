@@ -22,17 +22,20 @@ function fixture({existing=null,shippingExists=true,shippingCost=5}={}){
     const loadedOrder={getValue:({fieldId})=>({tranid:'SO123',subtotal:131.8,shippingcost:shippingCost,taxtotal:11.8,total:148.6}[fieldId])};
     const salesOrder={setValue:({fieldId,value})=>{fields[fieldId]=value;},selectNewLine:()=>{lines.push({});},
         setCurrentSublistValue:({fieldId,value})=>{lines.at(-1)[fieldId]=value;},commitLine:()=>{},save:()=>{saved++;return '444';}};
-    const record={Type:{CUSTOMER:'customer',SALES_ORDER:'salesorder',INVOICE:'invoice'},load:({type,id})=>type==='customer'?customer:type==='invoice'?invoice:String(id)==='204855'?lifecycleOrder:loadedOrder,
+    const record={Type:{CUSTOMER:'customer',SALES_ORDER:'salesorder',INVOICE:'invoice',ITEM_FULFILLMENT:'itemfulfillment'},load:({type,id})=>type==='customer'?customer:type==='invoice'?invoice:String(id)==='204855'?lifecycleOrder:loadedOrder,
         create:()=>{created++;return salesOrder;}};
-    const fulfillment={getValue:({name})=>({internalid:'500',tranid:'IF123',statusref:'picked',shipdate:'10/8/2026',trackingnumbers:'TRACK-1',lastmodifieddate:'10/8/2026'}[name]),getText:()=> 'Picked'};
+    const fulfillmentResult={
+        getValue:({name})=>({internalid:'500',tranid:'IF123',statusref:'A',shipdate:'10/8/2026',trackingnumbers:'TRACK-1',lastmodifieddate:'10/8/2026',createdfrom:'204855'}[name]),
+        getText:({name})=>({statusref:'Picked',createdfrom:'SO310591'}[name]),
+    };
     const search={Type:{SALES_ORDER:'salesorder',ITEM:'item',CONTACT:'contact',SHIP_ITEM:'shipitem',ITEM_FULFILLMENT:'itemfulfillment'},create:({type})=>({run:()=>({each:callback=>{
         if(type==='salesorder'&&existing)callback({getValue:()=>existing});
         if(type==='contact')callback({getValue:()=> '5847'});
         if(type==='item')callback({getValue:({name})=>name==='internalid'?'1968':'F'});
         if(type==='shipitem'&&shippingExists)callback({getValue:({name})=>name==='internalid'?'99':'Janvey Delivery'});
-        if(type==='itemfulfillment')callback(fulfillment);
+        if(type==='itemfulfillment')callback(fulfillmentResult);
     }})})};
-    const query={runSuiteQL:()=>({asMappedResults:()=>[{invoice_id:700}]})};
+    const query={runSuiteQL:({query})=>({asMappedResults:()=>query.includes('WHERE previousdoc = ? OR nextdoc = ?')?[{previousdoc:204855,nextdoc:500}]:query.includes('AS fulfillment_id')?[{fulfillment_id:500}]:[{invoice_id:700}]})};
     vm.runInNewContext(source,{define:(_deps,factory)=>{endpoint=factory(record,search,query,{getCurrentScript:()=>({getRemainingUsage:()=>4900})},{error:()=>{}});}});
     return {get:params=>endpoint.get(params),post:value=>endpoint.post(value),stats:()=>({created,saved,fields,lines})};
 }
@@ -43,12 +46,21 @@ test('GET lists active Shipping Item internal IDs without changing records',()=>
     assert.equal(value.stats().created,0);
 });
 
+test('GET diagnoses a specific Item Fulfillment without changing it',()=>{
+    const value=fixture();const result=JSON.parse(value.get({fulfillmentInternalId:'500'}));
+    assert.equal(result.fulfillment.transactionId,'IF123');
+    assert.equal(result.fulfillment.createdFromInternalId,'204855');
+    assert.equal(result.fulfillment.createdFromText,'SO310591');
+    assert.deepEqual(JSON.parse(JSON.stringify(result.links)),[{previousDoc:'204855',nextDoc:'500'}]);
+    assert.equal(value.stats().created,0);
+});
+
 test('GET returns read-only Sales Order fulfillment and invoice lifecycle data',()=>{
     const value=fixture();const result=JSON.parse(value.get({salesOrderInternalId:'204855'}));
     assert.equal(result.success,true);assert.equal(result.salesOrder.transactionId,'SO123');
     assert.equal(result.salesOrder.vendureOrderCode,'ABC123');
     assert.equal(result.salesOrder.statusText,'Pending Fulfillment');
-    assert.deepEqual(JSON.parse(JSON.stringify(result.fulfillments)),[{internalId:'500',transactionId:'IF123',statusCode:'picked',statusText:'Picked',shipDate:'10/8/2026',trackingNumbers:'TRACK-1',lastModifiedAt:'10/8/2026'}]);
+    assert.deepEqual(JSON.parse(JSON.stringify(result.fulfillments)),[{internalId:'500',transactionId:'IF123',statusCode:'A',statusText:'Picked',shipDate:'10/8/2026',trackingNumbers:'TRACK-1',lastModifiedAt:'10/8/2026'}]);
     assert.deepEqual(JSON.parse(JSON.stringify(result.invoices)),[{internalId:'700',transactionId:'INV123',statusText:'Open',invoiceDate:'10/8/2026',dueDate:'11/7/2026',totalCents:14860,lastModifiedAt:'10/8/2026'}]);
     assert.equal(value.stats().created,0);
 });

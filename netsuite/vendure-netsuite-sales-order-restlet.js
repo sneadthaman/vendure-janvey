@@ -128,29 +128,92 @@ define(['N/record','N/search','N/query','N/runtime','N/log'],(record,search,quer
     return normalized||null;
   }
 
-  function salesOrderLifecycle(value){
-    const internalId=requiredId(value,'salesOrderInternalId');
-    const salesOrder=record.load({type:record.Type.SALES_ORDER,id:internalId,isDynamic:false});
-    const externalId=text(salesOrder.getValue({fieldId:'externalid'}));
-    if(!externalId||externalId.indexOf('VENDURE-')!==0)throw new Error('Sales Order is not a Vendure web order');
-
-    const fulfillments=[];
+  function findFulfillment(fulfillmentId){
+    let fulfillment=null;
     search.create({
       type:search.Type.ITEM_FULFILLMENT,
-      filters:[['mainline','is','T'],'AND',['createdfrom','anyof',internalId]],
-      columns:['internalid','tranid','statusref','shipdate','trackingnumbers','lastmodifieddate'],
+      filters:[['internalid','anyof',fulfillmentId]],
+      columns:['internalid','tranid','statusref','shipdate','trackingnumbers','lastmodifieddate','createdfrom'],
     }).run().each(result=>{
-      fulfillments.push({
-        internalId:String(result.getValue({name:'internalid'})||''),
+      fulfillment={
+        internalId:String(result.getValue({name:'internalid'})||fulfillmentId),
         transactionId:text(result.getValue({name:'tranid'})),
         statusCode:text(result.getValue({name:'statusref'})),
         statusText:text(result.getText({name:'statusref'})),
         shipDate:text(result.getValue({name:'shipdate'})),
         trackingNumbers:text(result.getValue({name:'trackingnumbers'})),
         lastModifiedAt:text(result.getValue({name:'lastmodifieddate'})),
-      });
-      return fulfillments.length<200;
+        createdFromInternalId:text(result.getValue({name:'createdfrom'})),
+        createdFromText:text(result.getText({name:'createdfrom'})),
+      };
+      return false;
     });
+    if(!fulfillment)throw new Error(`Item Fulfillment ${fulfillmentId} was not found or is not visible to this integration role`);
+    return fulfillment;
+  }
+
+  function fulfillmentDetails(fulfillmentId){
+    const fulfillment=findFulfillment(fulfillmentId);
+    return {
+      internalId:fulfillment.internalId,
+      transactionId:fulfillment.transactionId,
+      statusCode:fulfillment.statusCode,
+      statusText:fulfillment.statusText,
+      shipDate:fulfillment.shipDate,
+      trackingNumbers:fulfillment.trackingNumbers,
+      lastModifiedAt:fulfillment.lastModifiedAt,
+    };
+  }
+
+  function fulfillmentDiagnostic(value){
+    const internalId=requiredId(value,'fulfillmentInternalId');
+    const fulfillment=findFulfillment(internalId);
+    const {createdFromInternalId,createdFromText,...details}=fulfillment;
+    const links=query.runSuiteQL({
+      query:`SELECT previousdoc, nextdoc
+             FROM PreviousTransactionLineLink
+             WHERE previousdoc = ? OR nextdoc = ?`,
+      params:[Number(internalId),Number(internalId)],
+    }).asMappedResults().slice(0,200).map(row=>({
+      previousDoc:text(row.previousdoc||row.PREVIOUSDOC),
+      nextDoc:text(row.nextdoc||row.NEXTDOC),
+    }));
+    return {
+      success:true,contractVersion:1,
+      fulfillment:{
+        ...details,
+        createdFromInternalId,
+        createdFromText,
+      },
+      links,
+      remainingUsage:runtime.getCurrentScript().getRemainingUsage(),
+    };
+  }
+
+  function salesOrderLifecycle(value){
+    const internalId=requiredId(value,'salesOrderInternalId');
+    const salesOrder=record.load({type:record.Type.SALES_ORDER,id:internalId,isDynamic:false});
+    const externalId=text(salesOrder.getValue({fieldId:'externalid'}));
+    if(!externalId||externalId.indexOf('VENDURE-')!==0)throw new Error('Sales Order is not a Vendure web order');
+
+    const fulfillmentIds=query.runSuiteQL({
+      query:`
+        SELECT DISTINCT fulfillment.id AS fulfillment_id
+        FROM PreviousTransactionLineLink sales_order_to_fulfillment
+        JOIN transaction fulfillment
+          ON fulfillment.id = sales_order_to_fulfillment.nextdoc
+         AND fulfillment.type = 'ItemShip'
+        WHERE sales_order_to_fulfillment.previousdoc = ?
+        ORDER BY fulfillment.id`,
+      params:[Number(internalId)],
+    }).asMappedResults().map(row=>String(row.fulfillment_id||row.FULFILLMENT_ID||'')).filter(id=>/^\d+$/.test(id));
+
+    search.create({type:search.Type.ITEM_FULFILLMENT,filters:[['createdfrom','anyof',internalId]],columns:['internalid']}).run().each(result=>{
+      const discovered=String(result.getValue({name:'internalid'})||'');
+      if(/^\d+$/.test(discovered)&&fulfillmentIds.indexOf(discovered)===-1)fulfillmentIds.push(discovered);
+      return fulfillmentIds.length<200;
+    });
+    const fulfillments=fulfillmentIds.slice(0,200).map(fulfillmentDetails);
 
     const invoiceIds=query.runSuiteQL({
       query:`
@@ -249,6 +312,7 @@ define(['N/record','N/search','N/query','N/runtime','N/log'],(record,search,quer
   }
 
   function get(params){
+    if(params&&params.fulfillmentInternalId)return JSON.stringify(fulfillmentDiagnostic(params.fulfillmentInternalId));
     if(params&&params.salesOrderInternalId)return JSON.stringify(salesOrderLifecycle(params.salesOrderInternalId));
     const shippingItems=[];
     search.create({type:search.Type.SHIP_ITEM,filters:[['isinactive','is','F']],columns:['internalid','itemid']}).run().each(result=>{
